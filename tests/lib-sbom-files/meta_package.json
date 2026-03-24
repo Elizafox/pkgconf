@@ -165,91 +165,91 @@
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "name": "meta_package",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "NOASSERTION",
             "software_homePage": "https://github.com/pkgconf/pkgconf",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "1.0.0"
+            "software_packageVersion": "1.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test1",
             "name": "test1",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "Test1 copyright text",
             "software_homePage": "",
             "software_downloadLocation": "",
-            "software_packageVersion": "1.0.0"
+            "software_packageVersion": "1.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test2",
             "name": "test2",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "NOASSERTION",
             "software_homePage": "https://github.com/pkgconf/pkgconf/",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "2.0.0"
+            "software_packageVersion": "2.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test3",
             "name": "test3",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "Test3 copyright text",
             "software_homePage": "https://github.com/pkgconf/pkgconf/",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "3.0.0"
+            "software_packageVersion": "3.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test4",
             "name": "test4",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "NOASSERTION",
             "software_homePage": "https://github.com/pkgconf/pkgconf/",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "4.0.0"
+            "software_packageVersion": "4.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test5",
             "name": "test5",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "NOASSERTION",
             "software_homePage": "https://github.com/pkgconf/pkgconf/",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "5.0.0"
+            "software_packageVersion": "5.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "software_Package",
             "creationInfo": "_:creationinfo_1",
             "spdxId": "https://github.com/pkgconf/pkgconf/Package/test6",
             "name": "test6",
-            "originatedBy": [
-                "https://github.com/pkgconf/pkgconf/Agent/default"
-            ],
             "software_copyrightText": "NOASSERTION",
             "software_homePage": "https://github.com/pkgconf/pkgconf/releases/",
             "software_downloadLocation": "https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.5.1.tar.gz",
-            "software_packageVersion": "6.0.0"
+            "software_packageVersion": "6.0.0",
+            "originatedBy": [
+                "https://github.com/pkgconf/pkgconf/Agent/default"
+            ]
         },
         {
             "type": "Relationship",
@@ -287,6 +287,7 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/meta_package/dependsOn/test2",
             "from": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test1",
                 "https://github.com/pkgconf/pkgconf/Package/test2"
             ],
             "relationshipType": "dependsOn"
@@ -297,6 +298,8 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/meta_package/dependsOn/test3",
             "from": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test1",
+                "https://github.com/pkgconf/pkgconf/Package/test2",
                 "https://github.com/pkgconf/pkgconf/Package/test3"
             ],
             "relationshipType": "dependsOn"
@@ -307,6 +310,9 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/meta_package/dependsOn/test4",
             "from": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test1",
+                "https://github.com/pkgconf/pkgconf/Package/test2",
+                "https://github.com/pkgconf/pkgconf/Package/test3",
                 "https://github.com/pkgconf/pkgconf/Package/test4"
             ],
             "relationshipType": "dependsOn"
@@ -317,6 +323,10 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/meta_package/dependsOn/test5",
             "from": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test1",
+                "https://github.com/pkgconf/pkgconf/Package/test2",
+                "https://github.com/pkgconf/pkgconf/Package/test3",
+                "https://github.com/pkgconf/pkgconf/Package/test4",
                 "https://github.com/pkgconf/pkgconf/Package/test5"
             ],
             "relationshipType": "dependsOn"
@@ -327,6 +337,11 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/meta_package/dependsOn/test6",
             "from": "https://github.com/pkgconf/pkgconf/Package/meta_package",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test1",
+                "https://github.com/pkgconf/pkgconf/Package/test2",
+                "https://github.com/pkgconf/pkgconf/Package/test3",
+                "https://github.com/pkgconf/pkgconf/Package/test4",
+                "https://github.com/pkgconf/pkgconf/Package/test5",
                 "https://github.com/pkgconf/pkgconf/Package/test6"
             ],
             "relationshipType": "dependsOn"
@@ -437,6 +452,7 @@
             "spdxId": "https://github.com/pkgconf/pkgconf/Relationship/test4/dependsOn/test6",
             "from": "https://github.com/pkgconf/pkgconf/Package/test4",
             "to": [
+                "https://github.com/pkgconf/pkgconf/Package/test5",
                 "https://github.com/pkgconf/pkgconf/Package/test6"
             ],
             "relationshipType": "dependsOn"

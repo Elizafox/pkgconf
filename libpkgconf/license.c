@@ -44,11 +44,12 @@ static void license_sanitize_string(const char *s, pkgconf_buffer_t *buf)
  *    :param pkgconf_client_t* client: The pkgconf client being accessed.
  *    :param pkgconf_list_t* list: The list the fragments are being added to.
  *    :param pkgconf_list_t* base: The list the fragments are being copied from.
- *    :return: nothing
+ *    :return: true on success, false on failure (OOM, etc.)
  */
-void
+bool
 pkgconf_license_copy_list(const pkgconf_client_t *client, pkgconf_list_t *list, const pkgconf_list_t *base)
 {
+    bool ret = false;
 	pkgconf_node_t *node;
 	(void) client;
 
@@ -56,16 +57,30 @@ pkgconf_license_copy_list(const pkgconf_client_t *client, pkgconf_list_t *list, 
 	{
 		pkgconf_license_t *license = node->data;
 		pkgconf_license_t *cpy_license = calloc(1, sizeof(pkgconf_license_t));
+        if (!cpy_license)
+            goto oom;
 
 		cpy_license->type = license->type;
 
 		if (license->data != NULL)
 		{
-			cpy_license->data = strdup(license->data);
+			if (!(cpy_license->data = strdup(license->data)))
+                goto oom;
 		}
 
 		pkgconf_node_insert_tail(&cpy_license->iter, cpy_license, list);
 	}
+
+    ret = true;
+
+oom:
+    if (!ret)
+    {
+        pkgconf_error(client, "pkgconf_license_copy_list: out of memory");
+        pkgconf_license_free(list);
+    }
+
+    return ret;
 }
 
 /*
@@ -81,6 +96,9 @@ pkgconf_license_copy_list(const pkgconf_client_t *client, pkgconf_list_t *list, 
 void
 pkgconf_license_free(pkgconf_list_t *list)
 {
+	if (!list)
+		return;
+
 	pkgconf_node_t *node, *next;
 
 	PKGCONF_FOREACH_LIST_ENTRY_SAFE(list->head, next, node)

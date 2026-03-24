@@ -511,7 +511,7 @@ PKGCONF_API void pkgconf_fragment_render_buf(const pkgconf_list_t *list, pkgconf
 PKGCONF_API bool pkgconf_fragment_has_system_dir(const pkgconf_client_t *client, const pkgconf_fragment_t *frag);
 
 /* license.c */
-PKGCONF_API void pkgconf_license_copy_list(const pkgconf_client_t *client, pkgconf_list_t *list, const pkgconf_list_t *base);
+PKGCONF_API bool pkgconf_license_copy_list(const pkgconf_client_t *client, pkgconf_list_t *list, const pkgconf_list_t *base);
 PKGCONF_API void pkgconf_license_evaluate_str(pkgconf_client_t *client, pkgconf_list_t *deplist_head, const char *expression, unsigned int flags);
 PKGCONF_API void pkgconf_license_evaluate(pkgconf_client_t *client, pkgconf_pkg_t *pkg, pkgconf_list_t *deplist, const char *depends, unsigned int flags);
 PKGCONF_API void pkgconf_license_free(pkgconf_list_t *list);
@@ -614,7 +614,7 @@ static inline char pkgconf_buffer_lastc(const pkgconf_buffer_t *buffer) {
 	return *(buffer->end - 1);
 }
 
-#define PKGCONF_BUFFER_INITIALIZER { NULL, NULL }
+#define PKGCONF_BUFFER_INITIALIZER (pkgconf_buffer_t){ NULL, NULL }
 #define PKGCONF_BUFFER_FROM_STR(str) &(const pkgconf_buffer_t){ .base = str, .end = ((str) ? &(str)[strlen(str)] : (str)) }
 #define PKGCONF_BUFFER_FROM_STR_NONNULL(str) &(const pkgconf_buffer_t){ .base = str, .end = &(str)[strlen(str)] }
 
