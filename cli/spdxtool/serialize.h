@@ -99,8 +99,11 @@ spdxtool_serialize_array_free(spdxtool_serialize_array_t *array);
 static inline spdxtool_serialize_value_t *
 spdxtool_serialize_value_string(const char *s)
 {
-	char *sv = NULL;
-	if (!s || !(sv = strdup(s)))
+	if (!s)
+		return NULL;
+
+	char *sv = strdup(s);
+	if (!sv)
 		return NULL;
 
 	spdxtool_serialize_value_t *value = calloc(1, sizeof(spdxtool_serialize_value_t));
@@ -248,11 +251,7 @@ spdxtool_serialize_value_array(spdxtool_serialize_array_t *array)
 static inline spdxtool_serialize_value_t *
 spdxtool_serialize_object_add_string(spdxtool_serialize_object_list_t *object_list, const char *key, const char *value)
 {
-	spdxtool_serialize_value_t *sv = spdxtool_serialize_value_string(value);
-	if (!sv)
-		return NULL;
-
-	return spdxtool_serialize_object_add_take(object_list, key, sv);
+	return spdxtool_serialize_object_add_take(object_list, key, spdxtool_serialize_value_string(value));
 }
 
 /*
@@ -352,18 +351,7 @@ spdxtool_serialize_object_add_null(spdxtool_serialize_object_list_t *object_list
 static inline spdxtool_serialize_value_t *
 spdxtool_serialize_object_add_object(spdxtool_serialize_object_list_t *object_list, const char *key, spdxtool_serialize_object_list_t *value)
 {
-	if (!value)
-		return NULL;
-
-	spdxtool_serialize_value_t *ret = spdxtool_serialize_value_object(value);
-	if (!ret)
-	{
-		// Since we take possession of the pointer unconditionally, clean up.
-		spdxtool_serialize_object_list_free(value);
-		return NULL;
-	}
-
-	return spdxtool_serialize_object_add_take(object_list, key, ret);
+	return spdxtool_serialize_object_add_take(object_list, key, spdxtool_serialize_value_object(value));
 }
 
 /*
@@ -383,18 +371,7 @@ spdxtool_serialize_object_add_object(spdxtool_serialize_object_list_t *object_li
 static inline spdxtool_serialize_value_t *
 spdxtool_serialize_object_add_array(spdxtool_serialize_object_list_t *object_list, const char *key, spdxtool_serialize_array_t *value)
 {
-	if (!value)
-		return NULL;
-
-	spdxtool_serialize_value_t *ret = spdxtool_serialize_value_array(value);
-	if (!ret)
-	{
-		// Since we take possession of the pointer unconditionally, clean up.
-		spdxtool_serialize_array_free(value);
-		return NULL;
-	}
-
-	return spdxtool_serialize_object_add_take(object_list, key, ret);
+	return spdxtool_serialize_object_add_take(object_list, key, spdxtool_serialize_value_array(value));
 }
 
 /*

@@ -156,20 +156,25 @@ spdxtool_serialize_value_to_buf(pkgconf_buffer_t *buffer, spdxtool_serialize_val
 spdxtool_serialize_value_t *
 spdxtool_serialize_object_add_take(spdxtool_serialize_object_list_t *object_list, const char *key, spdxtool_serialize_value_t *value)
 {
-	if (!object_list)
-		return NULL;
-
-	pkgconf_node_t *node = calloc(1, sizeof(pkgconf_node_t));
-	if (!node)
-		return NULL;
-
-	spdxtool_serialize_object_t *object = calloc(1, sizeof(spdxtool_serialize_object_t));
-	object->key = key ? strdup(key) : strdup("");
-	if (!object->key)
+	if (!object_list || !value)
 	{
-		free(node);
+		spdxtool_serialize_value_free(value);
 		return NULL;
 	}
+
+	pkgconf_node_t *node = calloc(1, sizeof(pkgconf_node_t));
+	spdxtool_serialize_object_t *object = calloc(1, sizeof(spdxtool_serialize_object_t));
+	char *keycopy = key ? strdup(key) : strdup("");
+	if (!node || !object || !keycopy)
+	{
+		free(node);
+		free(keycopy);
+		spdxtool_serialize_object_free(object);
+		spdxtool_serialize_value_free(value);
+		return NULL;
+	}
+
+	object->key = keycopy;
 	object->value = value;
 	pkgconf_node_insert_tail(node, object, &object_list->entries);
 	return value;
@@ -190,11 +195,18 @@ spdxtool_serialize_value_t *
 spdxtool_serialize_array_add_take(spdxtool_serialize_array_t *array, spdxtool_serialize_value_t *value)
 {
 	if (!array)
+	{
+		// Taking value, so free
+		spdxtool_serialize_value_free(value);
 		return NULL;
+	}
 
 	pkgconf_node_t *node = calloc(1, sizeof(pkgconf_node_t));
 	if (!node)
+	{
+		spdxtool_serialize_value_free(value);
 		return NULL;
+	}
 
 	pkgconf_node_insert_tail(node, value, &array->items);
 	return value;
@@ -446,7 +458,7 @@ spdxtool_serialize_sbom(pkgconf_client_t *client, spdxtool_core_agent_t *agent, 
 	root = NULL;
 
 err:
-	if (ret == NULL)
+	if (!ret)
 		pkgconf_error(client, "spdxtool_serialize_sbom: %s", errstr);
 
 	spdxtool_serialize_object_list_free(root);

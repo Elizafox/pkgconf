@@ -31,48 +31,34 @@
 spdxtool_core_agent_t *
 spdxtool_core_agent_new(pkgconf_client_t *client, const char *creation_info_id, const char *name)
 {
-	spdxtool_core_agent_t *agent = NULL;
-
-	if(!client || !creation_info_id || !name)
-	{
+	if (!client || !creation_info_id || !name)
 		return NULL;
-	}
 
-	agent = calloc(1, sizeof(spdxtool_core_agent_t));
-	if(!agent)
-	{
-		pkgconf_error(client, "Memory exhausted! Can't create agent struct.");
-		return NULL;
-	}
+	spdxtool_core_agent_t *agent = calloc(1, sizeof(spdxtool_core_agent_t));
+	if (!agent)
+		goto oom;
 
 	agent->type = "Agent";
 
-	// Copy for modification
 	char *spdx_id_name = strdup(name);
-	if(!spdx_id_name)
-	{
-		pkgconf_error(client, "spdxtool_core_agent_new: out of memory");
-		free(agent);
-		return NULL;
-	}
+	if (!spdx_id_name)
+		goto oom;
 
-	// NOTE: modifies string
 	spdxtool_util_string_correction(spdx_id_name);
-
 	agent->spdx_id = spdxtool_util_get_spdx_id_string(client, agent->type, spdx_id_name);
 	agent->creation_info = strdup(creation_info_id);
 	agent->name = strdup(name);
-
 	free(spdx_id_name);
 
-	if(!agent->spdx_id || !agent->creation_info || !agent->name)
-	{
-		pkgconf_error(client, "Memory exhausted! Can't create agent struct.");
-		spdxtool_core_agent_free(agent);
-		return NULL;
-	}
+	if (!agent->spdx_id || !agent->creation_info || !agent->name)
+		goto oom;
 
 	return agent;
+
+oom:
+	pkgconf_error(client, "spdxtool_core_agent_new: out of memory");
+	spdxtool_core_agent_free(agent);
+	return NULL;
 }
 
 /*
@@ -89,9 +75,7 @@ void
 spdxtool_core_agent_free(spdxtool_core_agent_t *agent)
 {
 	if(!agent)
-	{
 		return;
-	}
 
 	free(agent->creation_info);
 	free(agent->spdx_id);
@@ -199,9 +183,7 @@ void
 spdxtool_core_creation_info_free(spdxtool_core_creation_info_t *creation)
 {
 	if(!creation)
-	{
 		return;
-	}
 
 	free(creation->id);
 	free(creation->created);
@@ -240,8 +222,8 @@ spdxtool_core_creation_info_to_object(pkgconf_client_t *client, const spdxtool_c
 		goto oom;
 
 	ok = spdxtool_serialize_object_add_string(object_list, "type", creation->type) &&
-		 spdxtool_serialize_object_add_string(object_list, "@id", creation->id) &&
-		 spdxtool_serialize_object_add_string(object_list, "created", creation->created);
+		spdxtool_serialize_object_add_string(object_list, "@id", creation->id) &&
+		spdxtool_serialize_object_add_string(object_list, "created", creation->created);
 	if (!ok)
 		goto oom;
 
@@ -284,9 +266,7 @@ spdxtool_core_spdx_document_new(pkgconf_client_t *client, const char *spdx_id, c
 	spdxtool_core_spdx_document_t *spdx = NULL;
 
 	if(!client || !spdx_id || !creation_id || !agent_id)
-	{
 		return NULL;
-	}
 
 	spdx = calloc(1, sizeof(spdxtool_core_spdx_document_t));
 	if(!spdx)
@@ -324,9 +304,7 @@ spdxtool_core_spdx_document_free(spdxtool_core_spdx_document_t *spdx)
 	pkgconf_node_t *iter = NULL, *iter_next = NULL;
 
 	if(!spdx)
-	{
 		return;
-	}
 
 	free(spdx->spdx_id);
 	free(spdx->creation_info);

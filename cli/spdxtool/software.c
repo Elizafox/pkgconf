@@ -341,7 +341,7 @@ spdxtool_software_package_to_object(pkgconf_client_t *client, pkgconf_pkg_t *pkg
 	object_list = NULL;
 
 err:
-	if (ret == NULL)
+	if (!ret)
 		pkgconf_error(client, "spdxtool_software_package_to_object: %s", errstr);
 	free(creation_info);
 	free(spdx_id);
