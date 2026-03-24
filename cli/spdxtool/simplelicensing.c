@@ -110,7 +110,7 @@ spdxtool_simplelicensing_licenseExpression_to_object(pkgconf_client_t *client, c
 	object_list = NULL;
 
 oom:
-	if (ret == NULL)
+	if (!ret)
 		pkgconf_error(client, "spdxtool_simplelicensing_licenseExpression_to_object: out of memory");
 	spdxtool_serialize_object_list_free(object_list);
 	return ret;

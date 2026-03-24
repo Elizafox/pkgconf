@@ -147,7 +147,7 @@ generate_spdx_package(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *ptr)
 	node = calloc(1, sizeof(pkgconf_node_t));
 	if (!node)
 	{
-		pkgconf_error(client, "Memory exhausted!");
+		pkgconf_error(client, "generate_spdx_package: out of memory");
 		return;
 	}
 
@@ -192,7 +192,7 @@ generate_spdx(pkgconf_client_t *client, pkgconf_pkg_t *world, const char *creati
 	}
 	else
 	{
-		pkgconf_error(client, "Could not serialize document");
+		pkgconf_error(client, "generate_spdx: couldn't serialize document");
 	}
 	spdxtool_serialize_value_free(root);
 	pkgconf_buffer_finalize(&buffer);
