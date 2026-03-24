@@ -150,56 +150,53 @@ generate_spdx_package(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *ptr)
 static bool
 generate_spdx(pkgconf_client_t *client, pkgconf_pkg_t *world, const char *creation_time, const char *creation_id, const char *agent_name)
 {
+	bool ret = false;
 	const char *agent_name_string = agent_name ? agent_name : "Default";
 	const char *creation_id_string = creation_id ? creation_id : "_:creationinfo_1";
 
-	spdxtool_core_agent_t *agent = spdxtool_core_agent_new(client, creation_id_string, agent_name_string);
-	if (!agent)
-	{
-		pkgconf_error(client, "Could not create agent struct");
-		return false;
-	}
+	spdxtool_core_agent_t *agent = NULL;
+	spdxtool_core_creation_info_t *creation = NULL;
+	spdxtool_core_spdx_document_t *document = NULL;
+	spdxtool_serialize_value_t *root = NULL;
+	pkgconf_buffer_t buffer = PKGCONF_BUFFER_INITIALIZER;
 
-	spdxtool_core_creation_info_t *creation = spdxtool_core_creation_info_new(client, agent->spdx_id, creation_id_string, creation_time);
+	agent = spdxtool_core_agent_new(client, creation_id_string, agent_name_string);
+	if (!agent)
+		goto err;
+
+	creation = spdxtool_core_creation_info_new(client, agent->spdx_id, creation_id_string, creation_time);
 	if (!creation)
-	{
-		pkgconf_error(client, "Could not create creation info struct");
-		spdxtool_core_agent_free(agent);
-		return false;
-	}
+		goto err;
 
 	char *spdx_id_int = spdxtool_util_get_spdx_id_int(client, "spdxDocument");
-	spdxtool_core_spdx_document_t *document = spdxtool_core_spdx_document_new(client, spdx_id_int, creation_id_string, agent->spdx_id);
+	document = spdxtool_core_spdx_document_new(client, spdx_id_int, creation_id_string, agent->spdx_id);
 	free(spdx_id_int);
 	if (!document)
+		goto err;
+
+	if (pkgconf_pkg_traverse(client, world, generate_spdx_package, document, maximum_traverse_depth, 0) != PKGCONF_PKG_ERRF_OK)
+		goto err;
+
+	root = spdxtool_serialize_sbom(client, agent, creation, document);
+	if (spdxtool_serialize_value_to_buf(&buffer, root, 0))
 	{
-		pkgconf_error(client, "Could not create document");
-		spdxtool_core_creation_info_free(creation);
-		spdxtool_core_agent_free(agent);
-		return false;
+		fprintf(sbom_out, "%s\n", pkgconf_buffer_str(&buffer));
+		ret = true;
 	}
-
-	int eflag = pkgconf_pkg_traverse(client, world, generate_spdx_package, document, maximum_traverse_depth, 0);
-	if (eflag != PKGCONF_PKG_ERRF_OK)
+	else
 	{
-		spdxtool_core_spdx_document_free(document);
-		spdxtool_core_creation_info_free(creation);
-		spdxtool_core_agent_free(agent);
-		return false;
+		pkgconf_error(client, "Could not serialize document");
 	}
-
-	spdxtool_serialize_value_t root = spdxtool_serialize_sbom(client, agent, creation, document);
-	pkgconf_buffer_t buffer = PKGCONF_BUFFER_INITIALIZER;
-	spdxtool_serialize_value_to_buf(&buffer, root, 0);
-	spdxtool_serialize_value_free(&root);
-
-	fprintf(sbom_out, "%s\n", pkgconf_buffer_str(&buffer));
+	spdxtool_serialize_value_free(root);
 	pkgconf_buffer_finalize(&buffer);
 
+err:
+	if (!ret)
+		pkgconf_error(client, "generate_spdx: failed");
 	spdxtool_core_spdx_document_free(document);
 	spdxtool_core_creation_info_free(creation);
 	spdxtool_core_agent_free(agent);
-	return true;
+	return ret;
 }
 
 static int
