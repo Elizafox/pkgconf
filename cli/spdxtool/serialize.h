@@ -105,7 +105,10 @@ spdxtool_serialize_value_string(const char *s)
 
 	spdxtool_serialize_value_t *value = calloc(1, sizeof(spdxtool_serialize_value_t));
 	if (!value)
+	{
+		free(sv);
 		return NULL;
+	}
 
 	value->type = SPDXTOOL_SERIALIZE_TYPE_STRING;
 	value->value.s = sv;
