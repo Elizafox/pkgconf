@@ -1,11 +1,5 @@
 /* libpkgconf/config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define to 1 if you have the `strlcat' function. */
-#mesondefine HAVE_STRLCAT
-
-/* Define to 1 if you have the `strlcpy' function. */
-#mesondefine HAVE_STRLCPY
-
 /* Define to 1 if you have the `strndup' function. */
 #mesondefine HAVE_STRNDUP
 
