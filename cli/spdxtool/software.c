@@ -323,7 +323,7 @@ spdxtool_software_package_to_object(pkgconf_client_t *client, pkgconf_pkg_t *pkg
 	}
 
 	pkgconf_license_free(&relations);
-	relations = PKGCONF_LIST_INITIALIZER;
+	relations = (pkgconf_list_t)PKGCONF_LIST_INITIALIZER;
 
 	// Dependency relationships
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->required.head, node)

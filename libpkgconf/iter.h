@@ -32,7 +32,7 @@ typedef struct {
 	size_t length;
 } pkgconf_list_t;
 
-#define PKGCONF_LIST_INITIALIZER		(pkgconf_list_t){ NULL, NULL, 0 }
+#define PKGCONF_LIST_INITIALIZER		{ NULL, NULL, 0 }
 
 static inline void
 pkgconf_list_zero(pkgconf_list_t *list)
