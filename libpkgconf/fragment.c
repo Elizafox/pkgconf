@@ -275,7 +275,11 @@ should_inject_sysroot_child(const pkgconf_client_t *client, const pkgconf_fragme
 		return false;
 
 	if (!strncmp(string, client->sysroot_dir, strlen(client->sysroot_dir)) &&
+<<<<<<< HEAD
 		*(string + 1 + strlen(client->sysroot_dir)) == '/')
+=======
+			*(string + 1 + strlen(client->sysroot_dir)) == '/')
+>>>>>>> c816417 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 	{
 		return false;
 	}
@@ -629,11 +633,11 @@ pkgconf_fragment_filter(const pkgconf_client_t *client, pkgconf_list_t *dest, pk
 	}
 }
 
-static void
+static bool
 fragment_quote(pkgconf_buffer_t *out, const pkgconf_fragment_t *frag)
 {
 	if (frag->data == NULL)
-		return;
+		return true;
 
 	const pkgconf_buffer_t *src = PKGCONF_BUFFER_FROM_STR(frag->data);
 	const pkgconf_span_t quote_spans[] = {
@@ -649,30 +653,52 @@ fragment_quote(pkgconf_buffer_t *out, const pkgconf_fragment_t *frag)
 		{ 0x7f, 0xff },
 	};
 
-	pkgconf_buffer_escape(out, src, quote_spans, PKGCONF_ARRAY_SIZE(quote_spans));
+	return pkgconf_buffer_escape(out, src, quote_spans, PKGCONF_ARRAY_SIZE(quote_spans));
 }
 
-static void
+static bool
 fragment_render(const pkgconf_fragment_render_ctx_t *ctx, const pkgconf_fragment_t *frag, pkgconf_buffer_t *buf)
 {
 	const pkgconf_node_t *iter;
 	pkgconf_buffer_t quoted = PKGCONF_BUFFER_INITIALIZER;
 
-	fragment_quote(&quoted, frag);
+	if (!fragment_quote(&quoted, frag))
+	{
+		pkgconf_buffer_finalize(&quoted);
+		return false;
+	}
 
 	if (frag->type)
-		pkgconf_buffer_append_fmt(buf, "-%c", frag->type);
+	{
+		if (!pkgconf_buffer_append_fmt(buf, "-%c", frag->type))
+		{
+			pkgconf_buffer_finalize(&quoted);
+			return false;
+		}
+	}
 
-	pkgconf_buffer_append(buf, pkgconf_buffer_str_or_empty(&quoted));
+	if (!pkgconf_buffer_append(buf, pkgconf_buffer_str_or_empty(&quoted)))
+	{
+		pkgconf_buffer_finalize(&quoted);
+		return false;
+	}
+
 	pkgconf_buffer_finalize(&quoted);
 
 	PKGCONF_FOREACH_LIST_ENTRY(frag->children.head, iter)
 	{
 		const pkgconf_fragment_t *child_frag = iter->data;
+		if (!child_frag)
+			return false;
 
-		pkgconf_buffer_push_byte(buf, ctx->delim);
-		fragment_render(ctx, child_frag, buf);
+		if (!pkgconf_buffer_push_byte(buf, ctx->delim))
+			return false;
+
+		if (!fragment_render(ctx, child_frag, buf))
+			return false;
 	}
+
+	return true;
 }
 
 static const pkgconf_fragment_render_ops_t default_render_ops = {
@@ -682,7 +708,7 @@ static const pkgconf_fragment_render_ops_t default_render_ops = {
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_fragment_render_buf(const pkgconf_list_t *list, char *buf, size_t buflen, bool escape, const pkgconf_fragment_render_ops_t *ops, char delim)
+ * .. c:function:: bool pkgconf_fragment_render_buf(const pkgconf_list_t *list, char *buf, size_t buflen, bool escape, const pkgconf_fragment_render_ops_t *ops, char delim)
  *
  *    Renders a `fragment list` into a buffer.
  *
@@ -691,9 +717,9 @@ static const pkgconf_fragment_render_ops_t default_render_ops = {
  *    :param bool escape: Whether or not to escape special shell characters (deprecated).
  *    :param pkgconf_fragment_render_ops_t* ops: An optional ops structure to use for custom renderers, else ``NULL``.
  *    :param char delim: The delimiter to use between fragments.
- *    :return: nothing
+ *    :return: :code:`true` on success, :code:`false` on allocation failure.
  */
-void
+bool
 pkgconf_fragment_render_buf(const pkgconf_list_t *list, pkgconf_buffer_t *buf, bool escape, const pkgconf_fragment_render_ops_t *ops, char delim)
 {
 	pkgconf_node_t *node;
@@ -707,11 +733,20 @@ pkgconf_fragment_render_buf(const pkgconf_list_t *list, pkgconf_buffer_t *buf, b
 	PKGCONF_FOREACH_LIST_ENTRY(list->head, node)
 	{
 		const pkgconf_fragment_t *frag = node->data;
-		ops->render(&ctx, frag, buf);
+		if (!frag)
+			return false;
+
+		if (!ops->render(&ctx, frag, buf))
+			return false;
 
 		if (node->next != NULL)
-			pkgconf_buffer_push_byte(buf, ctx.delim);
+		{
+			if (!pkgconf_buffer_push_byte(buf, ctx.delim))
+				return false;
+		}
 	}
+
+	return true;
 }
 
 /*
