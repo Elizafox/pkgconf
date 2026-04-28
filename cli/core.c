@@ -33,18 +33,26 @@ print_list_entry(const pkgconf_pkg_t *entry, void *data)
 	if (entry->flags & PKGCONF_PKG_PROPF_UNINSTALLED)
 		return false;
 
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-			"%-30s %s - %s\n", entry->id, entry->realname, entry->description);
+	if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+			"%-30s %s - %s\n", entry->id, entry->realname, entry->description))
+	{
+		return true;
+	}
 
 	PKGCONF_FOREACH_LIST_ENTRY(entry->provides.head, n)
 	{
 		const pkgconf_dependency_t *dep = n->data;
+		if (!dep)
+			return true;
 
 		if (!strcmp(dep->package, entry->id))
 			continue;
 
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-			"%-30s %s - %s (provided by %s)\n", dep->package, entry->realname, entry->description, entry->id);
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+			"%-30s %s - %s (provided by %s)\n", dep->package, entry->realname, entry->description, entry->id))
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -59,16 +67,20 @@ print_package_entry(const pkgconf_pkg_t *entry, void *data)
 	if (entry->flags & PKGCONF_PKG_PROPF_UNINSTALLED)
 		return false;
 
-	pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, entry->id);
+	if (!pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, entry->id))
+		return true;
 
 	PKGCONF_FOREACH_LIST_ENTRY(entry->provides.head, n)
 	{
 		const pkgconf_dependency_t *dep = n->data;
+		if (!dep)
+			return true;
 
 		if (!strcmp(dep->package, entry->id))
 			continue;
 
-		pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, dep->package);
+		if (!pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, dep->package))
+			return true;
 	}
 
 	return false;
@@ -118,7 +130,7 @@ filter_libs(const pkgconf_client_t *client, const pkgconf_fragment_t *frag, void
 	return (state->want_flags & got_flags) != 0;
 }
 
-static void
+static bool
 print_variables(pkgconf_output_t *output, pkgconf_pkg_t *pkg)
 {
 	pkgconf_node_t *node;
@@ -127,11 +139,14 @@ print_variables(pkgconf_output_t *output, pkgconf_pkg_t *pkg)
 	{
 		pkgconf_tuple_t *tuple = node->data;
 
-		pkgconf_output_puts(output, PKGCONF_OUTPUT_STDOUT, tuple->key);
+		if (!pkgconf_output_puts(output, PKGCONF_OUTPUT_STDOUT, tuple->key))
+			return false;
 	}
+
+	return true;
 }
 
-static void
+static bool
 print_dependency_list(pkgconf_output_t *output, pkgconf_list_t *list)
 {
 	pkgconf_node_t *node;
@@ -140,14 +155,23 @@ print_dependency_list(pkgconf_output_t *output, pkgconf_list_t *list)
 	{
 		pkgconf_dependency_t *dep = node->data;
 
-		pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, "%s", dep->package);
+		if (!pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, "%s", dep->package))
+			return false;
 
 		if (dep->version != NULL)
-			pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, " %s %s",
-				pkgconf_pkg_get_comparator(dep), dep->version);
+		{
+			if (!pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, " %s %s",
+				pkgconf_pkg_get_comparator(dep), dep->version))
+			{
+				return false;
+			}
+		}
 
-		pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, "\n");
+		if (!pkgconf_output_fmt(output, PKGCONF_OUTPUT_STDOUT, "\n"))
+			return false;
 	}
+
+	return true;
 }
 
 static bool
@@ -162,34 +186,45 @@ apply_provides(pkgconf_client_t *client, pkgconf_pkg_t *world, void *unused, int
 		pkgconf_dependency_t *dep = iter->data;
 		pkgconf_pkg_t *pkg = dep->match;
 
-		print_dependency_list(client->output, &pkg->provides);
+		if (!print_dependency_list(client->output, &pkg->provides))
+			return false;
 	}
 
 	return true;
 }
 
 #ifndef PKGCONF_LITE
-static void
+static bool
 print_digraph_node(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	pkgconf_node_t *node;
 	pkgconf_pkg_t **last_seen = data;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "\"%s\" [fontname=Sans fontsize=8", pkg->id);
+	if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "\"%s\" [fontname=Sans fontsize=8", pkg->id))
+		return false;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VISITED_PRIVATE)
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " fontcolor=gray color=gray");
+	{
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " fontcolor=gray color=gray"))
+			return false;
+	}
 
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " label=\"%s@%s\"]\n", pkg->id, pkg->version);
+	if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " label=\"%s@%s\"]\n", pkg->id, pkg->version))
+		return false;
 
 	if (last_seen != NULL)
 	{
 		if (*last_seen != NULL)
-			pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-				"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=red]\n", (*last_seen)->id, pkg->id);
+		{
+			if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+				"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=red]\n", (*last_seen)->id, pkg->id))
+			{
+				return false;
+			}
+		}
 
 		*last_seen = pkg;
 	}
@@ -197,24 +232,39 @@ print_digraph_node(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->required.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return false;
 		const char *dep_id = (dep->match != NULL) ? dep->match->id : dep->package;
 
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "\"%s\" -> \"%s\" [fontname=Sans fontsize=8",
-			pkg->id, dep_id);
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "\"%s\" -> \"%s\" [fontname=Sans fontsize=8",
+			pkg->id, dep_id))
+		{
+			return false;
+		}
 
 		if (dep->flags & PKGCONF_PKG_DEPF_PRIVATE)
-			pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " color=gray");
+		{
+			if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, " color=gray"))
+				return false;
+		}
 
-		pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "]");
+		if (!pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "]"))
+			return false;
 	}
 
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->requires_private.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return false;
+
 		const char *dep_id = (dep->match != NULL) ? dep->match->id : dep->package;
 
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-			"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=gray]\n", pkg->id, dep_id);
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+			"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=gray]\n", pkg->id, dep_id))
+		{
+			return false;
+		}
 	}
 
 	if (!(client->flags & PKGCONF_PKG_PKGF_MERGE_PRIVATE_FRAGMENTS))
@@ -222,11 +272,19 @@ print_digraph_node(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 		PKGCONF_FOREACH_LIST_ENTRY(pkg->requires_shared.head, node)
 		{
 			pkgconf_dependency_t *dep = node->data;
+			if (!dep)
+				return false;
+
 			const char *dep_id = (dep->match != NULL) ? dep->match->id : dep->package;
-			pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-				"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=orange]\n", pkg->id, dep_id);
+			if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+				"\"%s\" -> \"%s\" [fontname=Sans fontsize=8 color=orange]\n", pkg->id, dep_id))
+			{
+				return false;
+			}
 		}
 	}
+
+	return true;
 }
 
 static bool
@@ -245,17 +303,26 @@ apply_digraph(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, int ma
 
 	if (state->want_flags & PKG_PRINT_DIGRAPH_QUERY_NODES)
 	{
-		pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT,
-			"\"user:request\" [fontname=Sans fontsize=8]\n");
+		if (!pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT,
+			"\"user:request\" [fontname=Sans fontsize=8]\n"))
+		{
+			return false;
+		}
 
 		PKGCONF_FOREACH_LIST_ENTRY(list->head, iter)
 		{
 			pkgconf_queue_t *pkgq = iter->data;
+			if (!pkgq)
+				return false;
+
 			pkgconf_pkg_t *pkg = pkgconf_pkg_find(client, pkgq->package);
 
-			pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+			if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
 				"\"user:request\" -> \"%s\" [fontname=Sans fontsize=8]\n",
-				pkg == NULL ? pkgq->package : pkg->id);
+				pkg == NULL ? pkgq->package : pkg->id))
+			{
+				return false;
+			}
 
 			if (pkg != NULL)
 				pkgconf_pkg_unref(client, pkg);
@@ -267,16 +334,15 @@ apply_digraph(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, int ma
 	if (eflag != PKGCONF_PKG_ERRF_OK)
 		return false;
 
-	pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "}");
-	return true;
+	return pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "}");
 }
 
-static void
+static bool
 print_solution_node(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unused)
 {
 	(void) unused;
 
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s (%"PRIu64")%s\n",
+	return pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s (%"PRIu64")%s\n",
 		pkg->id, pkg->identifier,
 		(pkg->flags & PKGCONF_PKG_PROPF_VISITED_PRIVATE) == PKGCONF_PKG_PROPF_VISITED_PRIVATE ? " [private]" : "");
 }
@@ -670,7 +736,7 @@ apply_requires_private(pkgconf_client_t *client, pkgconf_pkg_t *world, void *unu
 	return true;
 }
 
-static void
+static bool
 check_uninstalled(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	int *retval = data;
@@ -678,6 +744,8 @@ check_uninstalled(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_UNINSTALLED)
 		*retval = EXIT_SUCCESS;
+
+	return true;
 }
 
 static bool
@@ -694,38 +762,51 @@ apply_uninstalled(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, in
 }
 
 #ifndef PKGCONF_LITE
-static void
+static bool
 print_graph_node(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	pkgconf_node_t *n;
 
 	(void) data;
 
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "node '%s' {\n", pkg->id);
+	if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "node '%s' {\n", pkg->id))
+		return false;
 
 	if (pkg->version != NULL)
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "    version = '%s';\n", pkg->version);
+	{
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "    version = '%s';\n", pkg->version))
+			return false;
+	}
 
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->required.head, n)
 	{
 		pkgconf_dependency_t *dep = n->data;
+		if (!dep)
+			return false;
 
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "    dependency '%s'", dep->package);
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "    dependency '%s'", dep->package))
+			return false;
 
 		if (dep->compare != PKGCONF_CMP_ANY)
 		{
-			pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+			if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
 				" {\n"
 				"        comparator = '%s';\n"
 				"        version = '%s';\n"
 				"    };\n",
-				pkgconf_pkg_get_comparator(dep), dep->version);
+				pkgconf_pkg_get_comparator(dep), dep->version))
+			{
+				return false;
+			}
 		}
 		else
-			pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, ";");
+		{
+			if (!pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, ";"))
+				return false;
+		}
 	}
 
-	pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "};");
+	return pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, "};");
 }
 
 static bool
@@ -787,28 +868,36 @@ apply_fragment_tree(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, 
 	return true;
 }
 
-static void
+static bool
 print_license(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	pkgconf_buffer_t render_buf = PKGCONF_BUFFER_INITIALIZER;
 	(void) data;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
 	if (pkg->license.head == NULL)
 	{
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
-				"%s: NOASSERTION\n", pkg->id);
+		if (!pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT,
+				"%s: NOASSERTION\n", pkg->id))
+		{
+			return false;
+		}
 	}
 	else
 	{
 		/* NOASSERTION is the default when the license is unknown, per SPDX spec § 3.15 */
-		pkgconf_license_render(client, &pkg->license, &render_buf);
-		pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: ", pkg->id);
-		pkgconf_output_putbuf(client->output, PKGCONF_OUTPUT_STDOUT, &render_buf, true);
+		if (!pkgconf_license_render(client, &pkg->license, &render_buf)
+			|| !pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: ", pkg->id)
+			|| !pkgconf_output_putbuf(client->output, PKGCONF_OUTPUT_STDOUT, &render_buf, true))
+		{
+			return false;
+		}
 		pkgconf_buffer_finalize(&render_buf);
 	}
+
+	return true;
 }
 
 static bool
@@ -824,16 +913,16 @@ apply_license(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, int ma
 	return true;
 }
 
-static void
+static bool
 print_license_file(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	(void) data;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
 	/* If license file location is not available then just print empty */
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: %s\n",
+	return pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: %s\n",
 		pkg->id, pkg->license_file != NULL ? pkg->license_file : "");
 }
 
@@ -850,16 +939,16 @@ apply_license_file(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, i
 	return true;
 }
 
-static void
+static bool
 print_source(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *data)
 {
 	(void) data;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
 	/* If source is empty then empty string is printed otherwise URL */
-	pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: %s\n",
+	return pkgconf_output_fmt(client->output, PKGCONF_OUTPUT_STDOUT, "%s: %s\n",
 		pkg->id, pkg->source != NULL ? pkg->source : "");
 }
 

@@ -62,13 +62,29 @@ path_list_contains_entry(const pkgconf_buffer_t *text, pkgconf_list_t *dirlist)
  */
 
 static pkgconf_path_t *
-prepare_path_node(const char *text, pkgconf_list_t *dirlist, bool filter)
+prepare_path_node(const char *text, pkgconf_list_t *dirlist, bool filter, bool *err)
 {
 	pkgconf_path_t *node;
 	pkgconf_buffer_t pathbuf = PKGCONF_BUFFER_INITIALIZER;
 
-	pkgconf_buffer_append(&pathbuf, text);
-	pkgconf_path_relocate(&pathbuf);
+	if (err != NULL)
+		*err = false;
+
+	if (!pkgconf_buffer_append(&pathbuf, text))
+	{
+		pkgconf_buffer_finalize(&pathbuf);
+		if (err != NULL)
+			*err = true;
+		return NULL;
+	}
+
+	if (!pkgconf_path_relocate(&pathbuf))
+	{
+		pkgconf_buffer_finalize(&pathbuf);
+		if (err != NULL)
+			*err = true;
+		return NULL;
+	}
 
 #ifdef PKGCONF_CACHE_INODES
 	struct stat st;
@@ -111,10 +127,19 @@ prepare_path_node(const char *text, pkgconf_list_t *dirlist, bool filter)
 	if (node == NULL)
 	{
 		pkgconf_buffer_finalize(&pathbuf);
+		if (err != NULL)
+			*err = true;
 		return NULL;
 	}
 
 	node->path = pkgconf_buffer_freeze(&pathbuf);
+	if (node->path == NULL)
+	{
+		free(node);
+		if (err != NULL)
+			*err = true;
+		return NULL;
+	}
 
 #ifdef PKGCONF_CACHE_INODES
 	if (filter)
@@ -130,45 +155,49 @@ prepare_path_node(const char *text, pkgconf_list_t *dirlist, bool filter)
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_path_add(const char *text, pkgconf_list_t *dirlist)
+ * .. c:function:: bool pkgconf_path_add(const char *text, pkgconf_list_t *dirlist, bool filter)
  *
  *    Adds a path node to a path list.  If the path is already in the list, do nothing.
  *
  *    :param char* text: The path text to add as a path node.
  *    :param pkgconf_list_t* dirlist: The path list to add the path node to.
  *    :param bool filter: Whether to perform duplicate filtering.
- *    :return: nothing
+ *    :return: :code:`true` on success or duplicate skip, :code:`false` on allocation failure.
  */
-void
+bool
 pkgconf_path_add(const char *text, pkgconf_list_t *dirlist, bool filter)
 {
-	pkgconf_path_t *node = prepare_path_node(text, dirlist, filter);
+	bool err = false;
+	pkgconf_path_t *node = prepare_path_node(text, dirlist, filter, &err);
 	if (node == NULL)
-		return;
+		return !err;
 
 	pkgconf_node_insert_tail(&node->lnode, node, dirlist);
+	return true;
 }
 
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_path_prepend(const char *text, pkgconf_list_t *dirlist)
+ * .. c:function:: bool pkgconf_path_prepend(const char *text, pkgconf_list_t *dirlist, bool filter)
  *
  *    Prepends a path node to a path list.  If the path is already in the list, do nothing.
  *
  *    :param char* text: The path text to add as a path node.
  *    :param pkgconf_list_t* dirlist: The path list to add the path node to.
  *    :param bool filter: Whether to perform duplicate filtering.
- *    :return: nothing
+ *    :return: :code:`true` on success or duplicate skip, :code:`false` on allocation failure.
  */
-void
+bool
 pkgconf_path_prepend(const char *text, pkgconf_list_t *dirlist, bool filter)
 {
-	pkgconf_path_t *node = prepare_path_node(text, dirlist, filter);
+	bool err = false;
+	pkgconf_path_t *node = prepare_path_node(text, dirlist, filter, &err);
 	if (node == NULL)
-		return;
+		return !err;
 
 	pkgconf_node_insert(&node->lnode, node, dirlist);
+	return true;
 }
 
 /*
@@ -196,9 +225,10 @@ pkgconf_path_split(const char *text, pkgconf_list_t *dirlist, bool filter)
 	iter = workbuf = strdup(text);
 	while ((p = strtok(iter, PKG_CONFIG_PATH_SEP_S)) != NULL)
 	{
-		pkgconf_path_add(p, dirlist, filter);
+		if (pkgconf_path_add(p, dirlist, filter))
+			count++;
 
-		count++, iter = NULL;
+		iter = NULL;
 	}
 	free(workbuf);
 
@@ -256,7 +286,11 @@ pkgconf_path_match_list(const char *path, const pkgconf_list_t *dirlist)
 	pkgconf_buffer_t relocated = PKGCONF_BUFFER_INITIALIZER;
 	const char *cpath = path;
 
-	pkgconf_buffer_append(&relocated, path);
+	if (!pkgconf_buffer_append(&relocated, path))
+	{
+		pkgconf_buffer_finalize(&relocated);
+		return false;
+	}
 	cpath = pkgconf_buffer_str(&relocated);
 
 	if (pkgconf_path_relocate(&relocated))
@@ -280,50 +314,54 @@ pkgconf_path_match_list(const char *path, const pkgconf_list_t *dirlist)
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_path_copy_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
+ * .. c:function:: bool pkgconf_path_copy_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
  *
  *    Copies a path list to another path list.
  *
  *    :param pkgconf_list_t* dst: The path list to copy to.
  *    :param pkgconf_list_t* src: The path list to copy from.
- *    :return: nothing
+ *    :return: :code:`true` on success, :code:`false` on allocation failure.
  */
-void
+bool
 pkgconf_path_copy_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
 {
 	pkgconf_node_t *n;
-
 	PKGCONF_FOREACH_LIST_ENTRY(src->head, n)
 	{
 		pkgconf_path_t *srcpath = n->data, *path;
-
 		path = calloc(1, sizeof(pkgconf_path_t));
 		if (path == NULL)
-			continue;
-
+			goto oom;
 		path->path = strdup(srcpath->path);
-
+		if (path->path == NULL)
+		{
+			free(path);
+			goto oom;
+		}
 #ifdef PKGCONF_CACHE_INODES
 		path->handle_path = srcpath->handle_path;
 		path->handle_device = srcpath->handle_device;
 #endif
-
 		pkgconf_node_insert_tail(&path->lnode, path, dst);
 	}
+	return true;
+oom:
+	pkgconf_path_free(dst);
+	return false;
 }
 
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_path_prepend_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
+ * .. c:function:: bool pkgconf_path_prepend_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
  *
  *    Copies a path list to another path list.
  *
  *    :param pkgconf_list_t* dst: The path list to copy to.
  *    :param pkgconf_list_t* src: The path list to copy from.
- *    :return: nothing
+ *    :return: :code:`true` on success, :code:`false` on allocation failure.
  */
-void
+bool
 pkgconf_path_prepend_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
 {
 	pkgconf_node_t *n;
@@ -334,9 +372,14 @@ pkgconf_path_prepend_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
 
 		path = calloc(1, sizeof(pkgconf_path_t));
 		if (path == NULL)
-			continue;
+			goto oom;
 
 		path->path = strdup(srcpath->path);
+		if (path->path == NULL)
+		{
+			free(path);
+			goto oom;
+		}
 
 #ifdef PKGCONF_CACHE_INODES
 		path->handle_path = srcpath->handle_path;
@@ -345,6 +388,12 @@ pkgconf_path_prepend_list(pkgconf_list_t *dst, const pkgconf_list_t *src)
 
 		pkgconf_node_insert(&path->lnode, path, dst);
 	}
+
+	return true;
+
+oom:
+	pkgconf_path_free(dst);
+	return false;
 }
 
 /*
@@ -381,7 +430,7 @@ normpath(const pkgconf_buffer_t *pathbuf)
 
 	const char *path = pkgconf_buffer_str(pathbuf);
 	char *copy = strdup(path);
-	if (NULL == copy)
+	if (!copy)
 		return NULL;
 	char *ptr = copy;
 
@@ -420,8 +469,9 @@ pkgconf_path_relocate(pkgconf_buffer_t *buf)
 	if ((tmpbuf = normpath(buf)) != NULL)
 	{
 		pkgconf_buffer_reset(buf);
-		pkgconf_buffer_append(buf, tmpbuf);
+		bool ok = pkgconf_buffer_append(buf, tmpbuf);
 		free(tmpbuf);
+		return ok;
 	}
 
 	return true;
@@ -497,7 +547,7 @@ pkgconf_path_find_basename(const char *path)
 /*
  * !doc
  *
- * .. c:function:: void pkgconf_path_build_from_registry(HKEY hKey, pkgconf_list_t *dir_list, bool filter)
+ * .. c:function:: size_t pkgconf_path_build_from_registry(HKEY hKey, pkgconf_list_t *dir_list, bool filter)
  *
  *    Adds paths to a directory list discovered from a given registry key.
  *
@@ -526,12 +576,11 @@ pkgconf_path_build_from_registry(void *hKey, pkgconf_list_t *dir_list, bool filt
 		char pathbuf[PKGCONF_ITEM_SIZE];
 		DWORD type;
 		DWORD pathbuflen = sizeof pathbuf;
-
 		if (RegQueryValueEx(key, buf, NULL, &type, (LPBYTE) pathbuf, &pathbuflen)
 				== ERROR_SUCCESS && type == REG_SZ)
 		{
-			pkgconf_path_add(pathbuf, dir_list, filter);
-			added++;
+			if (pkgconf_path_add(pathbuf, dir_list, filter))
+				added++;
 		}
 
 		bufsize = sizeof buf;

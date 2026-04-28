@@ -65,7 +65,6 @@ environ_lookup_handler(const pkgconf_client_t *client, const char *key)
 static bool
 error_handler(const char *msg, const pkgconf_client_t *client, void *data)
 {
-	(void) client;
 	(void) data;
 	OUTPUT_OR_RET_FALSE(client, error_msgout, "%s", msg);
 	return true;
@@ -92,6 +91,9 @@ sbom_name(pkgconf_pkg_t *world)
 	PKGCONF_FOREACH_LIST_ENTRY(world->required.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return NULL;
+
 		pkgconf_pkg_t *match = dep->match;
 
 		if ((dep->flags & PKGCONF_PKG_DEPF_QUERY) != PKGCONF_PKG_DEPF_QUERY)
@@ -109,6 +111,7 @@ sbom_name(pkgconf_pkg_t *world)
 static bool
 write_sbom_header(pkgconf_client_t *client, pkgconf_pkg_t *world)
 {
+<<<<<<< HEAD
 	char *tmp = sbom_name(world);
 	if (!tmp)
 	{
@@ -127,6 +130,23 @@ write_sbom_header(pkgconf_client_t *client, pkgconf_pkg_t *world)
 	OUTPUT_OR_RET_FALSE(client, sbom_out, "\n\n");
 
 	return true;
+=======
+	(void) client;
+	char *docname = sbom_name(world);
+	if (!docname)
+		return false;
+
+	bool ok = fprintf(sbom_out, "SPDXVersion: %s\n", spdx_version) > 0
+		&& fprintf(sbom_out, "DataLicense: %s\n", bom_license) > 0
+		&& fprintf(sbom_out, "SPDXID: %s\n", document_ref) > 0
+		&& fprintf(sbom_out, "DocumentName: %s\n", docname) > 0
+		&& fprintf(sbom_out, "DocumentNamespace: https://spdx.org/spdxdocs/bomtool-%s\n", PACKAGE_VERSION) > 0
+		&& fprintf(sbom_out, "Creator: Tool: bomtool %s\n", PACKAGE_VERSION) > 0
+		&& fprintf(sbom_out, "\n\n") > 0;
+
+	free(docname);
+	return ok;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 }
 
 static const char *
@@ -140,27 +160,44 @@ sbom_identity(pkgconf_pkg_t *pkg)
 }
 
 static bool
+<<<<<<< HEAD
 write_copyright_lines(pkgconf_client_t *client, const pkgconf_list_t *copyright_lines)
+=======
+write_copyright_lines(const pkgconf_list_t *copyright_lines)
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 {
 	const pkgconf_node_t *node;
 
 	if (copyright_lines->head == NULL)
 		return true;
 
+<<<<<<< HEAD
 	OUTPUT_OR_RET_FALSE(client, sbom_out, "PackageCopyrightText: <text>");
+=======
+	if (fprintf(sbom_out, "PackageCopyrightText: <text>") <= 0)
+		return false;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 
 	PKGCONF_FOREACH_LIST_ENTRY(copyright_lines->head, node)
 	{
 		const pkgconf_bufferset_t *set = node->data;
+<<<<<<< HEAD
 		OUTPUT_OR_RET_FALSE(client, sbom_out, "%s%s", pkgconf_buffer_str_or_empty(&set->buffer), node->prev != NULL ? "\n" : "");
 	}
 
 	OUTPUT_OR_RET_FALSE(client, sbom_out, "</text>\n");
 
 	return true;
+=======
+		if (fprintf(sbom_out, "%s%s", pkgconf_buffer_str_or_empty(&set->buffer), node->prev != NULL ? "\n" : "") <= 0)
+			return false;
+	}
+
+	return fprintf(sbom_out, "</text>\n") > 0;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 }
 
-static void
+static bool
 write_sbom_package(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unused)
 {
 	pkgconf_buffer_t license_buf = PKGCONF_BUFFER_INITIALIZER;
@@ -168,8 +205,9 @@ write_sbom_package(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unused)
 	(void) unused;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
+<<<<<<< HEAD
 	OUTPUT_OR_RET(client, sbom_out, "##### Package: %s\n\n", sbom_identity(pkg));
 	OUTPUT_OR_RET(client, sbom_out, "PackageName: %s\n", pkg->id);
 	OUTPUT_OR_RET(client, sbom_out, "SPDXID: SPDXRef-Package-%s\n", sbom_spdx_identity(pkg));
@@ -210,9 +248,70 @@ write_sbom_package(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unused)
 		OUTPUT_OR_RET(client, sbom_out, "PackageDownloadLocation: NOASSERTION\n");
 
 	OUTPUT_OR_RET(client, sbom_out, "\n\n");
+=======
+	if (fprintf(sbom_out, "##### Package: %s\n\n", sbom_identity(pkg)) <= 0
+		|| fprintf(sbom_out, "PackageName: %s\n", pkg->id) <= 0
+		|| fprintf(sbom_out, "SPDXID: SPDXRef-Package-%s\n", sbom_spdx_identity(pkg)) <= 0
+		|| fprintf(sbom_out, "PackageVersion: %s\n", pkg->version) <= 0
+		|| fprintf(sbom_out, "PackageVerificationCode: NOASSERTION\n") <= 0)
+	{
+		return false;
+	}
+
+	/* XXX: What about projects? */
+	if (pkg->maintainer != NULL)
+	{
+		if (fprintf(sbom_out, "PackageSupplier: Person: %s\n", pkg->maintainer) <= 0)
+			return false;
+	}
+
+	if (pkg->url != NULL)
+	{
+		if (fprintf(sbom_out, "PackageHomePage: %s\n", pkg->url) <= 0)
+			return false;
+	}
+
+	if (pkg->license.head != NULL)
+	{
+		bool ok = pkgconf_license_render(client, &pkg->license, &license_buf)
+			&& fprintf(sbom_out, "PackageLicenseDeclared: %s\n", pkgconf_buffer_str_or_empty(&license_buf)) > 0;
+
+		pkgconf_buffer_finalize(&license_buf);
+
+		if (!ok)
+			return false;
+	}
+	else
+	{
+		if (fprintf(sbom_out, "PackageLicenseDeclared: NOASSERTION\n") <= 0)
+			return false;
+	}
+
+	if (!write_copyright_lines(&pkg->copyright))
+		return false;
+
+	if (pkg->description != NULL)
+	{
+		if (fprintf(sbom_out, "PackageSummary: <text>%s</text>\n", pkg->description) <= 0)
+			return false;
+	}
+
+	if (pkg->source != NULL)
+	{
+		if (fprintf(sbom_out, "PackageDownloadLocation: %s\n", pkg->source) <= 0)
+			return false;
+	}
+	else
+	{
+		if (fprintf(sbom_out, "PackageDownloadLocation: NOASSERTION\n") <= 0)
+			return false;
+	}
+
+	return fprintf(sbom_out, "\n\n") > 0;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 }
 
-static void
+static bool
 write_sbom_relationships(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unused)
 {
 	(void) client;
@@ -222,36 +321,68 @@ write_sbom_relationships(pkgconf_client_t *client, pkgconf_pkg_t *pkg, void *unu
 	pkgconf_node_t *node;
 
 	if (pkg->flags & PKGCONF_PKG_PROPF_VIRTUAL)
-		return;
+		return true;
 
-	snprintf(baseref, sizeof baseref, "SPDXRef-Package-%sC64%s", pkg->id, pkg->version);
+	if (snprintf(baseref, sizeof(baseref), "SPDXRef-Package-%sC64%s", pkg->id, pkg->version) >= (int)sizeof(baseref))
+		return false;
 
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->required.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return false;
+
 		pkgconf_pkg_t *match = dep->match;
 
 		if (!dep->match)
 			continue;
 
+<<<<<<< HEAD
 		OUTPUT_OR_RET(client, sbom_out, "Relationship: %s DEPENDS_ON SPDXRef-Package-%s\n", baseref, sbom_spdx_identity(match));
 		OUTPUT_OR_RET(client, sbom_out, "Relationship: SPDXRef-Package-%s DEPENDENCY_OF %s\n", sbom_spdx_identity(match), baseref);
+=======
+		if (fprintf(sbom_out, "Relationship: %s DEPENDS_ON SPDXRef-Package-%s\n", baseref, sbom_spdx_identity(match)) <= 0
+			|| fprintf(sbom_out, "Relationship: SPDXRef-Package-%s DEPENDENCY_OF %s\n", sbom_spdx_identity(match), baseref) <= 0)
+		{
+			return false;
+		}
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 	}
 
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->requires_private.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return false;
+
 		pkgconf_pkg_t *match = dep->match;
 
 		if (!dep->match)
 			continue;
 
+<<<<<<< HEAD
 		OUTPUT_OR_RET(client, sbom_out, "Relationship: %s DEPENDS_ON SPDXRef-Package-%s\n", baseref, sbom_spdx_identity(match));
 		OUTPUT_OR_RET(client, sbom_out, "Relationship: SPDXRef-Package-%s DEV_DEPENDENCY_OF %s\n", sbom_spdx_identity(match), baseref);
 	}
 
 	if (pkg->required.head != NULL || pkg->requires_private.head != NULL)
 		OUTPUT_OR_RET(client, sbom_out, "\n\n");
+=======
+		if (fprintf(sbom_out, "Relationship: %s DEPENDS_ON SPDXRef-Package-%s\n", baseref, sbom_spdx_identity(match)) <= 0
+			|| fprintf(sbom_out, "Relationship: SPDXRef-Package-%s DEV_DEPENDENCY_OF %s\n", sbom_spdx_identity(match), baseref) <= 0)
+		{
+			return false;
+		}
+	}
+
+	if (pkg->required.head != NULL || pkg->requires_private.head != NULL)
+	{
+		if (fprintf(sbom_out, "\n\n") <= 0)
+			return false;
+	}
+
+	return true;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 }
 
 static bool
@@ -274,12 +405,20 @@ generate_sbom_from_world(pkgconf_client_t *client, pkgconf_pkg_t *world)
 	PKGCONF_FOREACH_LIST_ENTRY(world->required.head, node)
 	{
 		pkgconf_dependency_t *dep = node->data;
+		if (!dep)
+			return false;
+
 		pkgconf_pkg_t *match = dep->match;
 
 		if (!dep->match)
 			continue;
 
+<<<<<<< HEAD
 		OUTPUT_OR_RET_FALSE(client, sbom_out, "Relationship: %s DESCRIBES SPDXRef-Package-%s\n", document_ref, sbom_spdx_identity(match));
+=======
+		if (fprintf(sbom_out, "Relationship: %s DESCRIBES SPDXRef-Package-%s\n", document_ref, sbom_spdx_identity(match)) <= 0)
+			return false;
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 	}
 
 	return true;
@@ -345,7 +484,10 @@ main(int argc, char *argv[])
 		{ "about", no_argument, &want_flags, PKG_ABOUT, },
 		{ "help", no_argument, &want_flags, PKG_HELP, },
 		{ "output", required_argument, NULL, PKG_OUTPUT, },
+<<<<<<< HEAD
 		{ "define-variable", required_argument, NULL, PKG_DEFINE_VARIABLE, },
+=======
+>>>>>>> bfc5599 (libpkgconf: begin checking pkgconf_buffer_* return codes)
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -373,13 +515,23 @@ main(int argc, char *argv[])
 		}
 	}
 
-	pkgconf_client_init(&pkg_client, error_handler, NULL, personality, NULL, environ_lookup_handler);
+	if (!pkgconf_client_init(&pkg_client, error_handler, NULL, personality, NULL, environ_lookup_handler))
+	{
+		fprintf(stderr, "unable to initialize pkgconf client");
+		ret = EXIT_FAILURE;
+		goto out;
+	}
 
 	/* we have determined what features we want most likely.  in some cases, we override later. */
 	pkgconf_client_set_flags(&pkg_client, want_client_flags);
 
 	/* at this point, want_client_flags should be set, so build the dir list */
-	pkgconf_client_dir_list_build(&pkg_client, personality);
+	if (!pkgconf_client_dir_list_build(&pkg_client, personality))
+	{
+		fprintf(stderr, "pkgconf_client_dir_list_build failed");
+		ret = EXIT_FAILURE;
+		goto out;
+	}
 
 	if ((want_flags & PKG_ABOUT) == PKG_ABOUT)
 		return about();
