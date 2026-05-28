@@ -142,6 +142,7 @@ EXTRA_DIST =	pkg.m4 \
 		t/parser/version-with-whitespace-diagnostic.test \
 		t/parser/version-with-whitespace.test \
 		t/personality/dump-personality.test \
+		t/personality/dump-personality-want-defaults.test \
 		t/personality/pc-path-var.test \
 		t/personality/pc-system-includedirs.test \
 		t/personality/pc-system-libdirs.test \

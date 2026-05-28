@@ -1,0 +1,7 @@
+SkipPlatforms: lite
+WantPersonality: %TEST_FIXTURES_DIR%/personality-data/want-defaults.personality
+WantedFlags: dump-personality
+ExpectedStdout: Triplet: want-defaults
+ExpectedStdout: WantDefaultStatic: true
+ExpectedStdout: WantDefaultPure: true
+MatchStdout: partial

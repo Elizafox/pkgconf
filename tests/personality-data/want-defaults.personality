@@ -1,0 +1,6 @@
+Triplet: want-defaults
+DefaultSearchPaths: /usr/lib/want-defaults/pkgconfig:/usr/share/pkgconfig
+SystemIncludePaths: /usr/lib/want-defaults/include
+SystemLibraryPaths: /usr/lib/want-defaults/lib
+WantDefaultStatic: true
+WantDefaultPure: true
