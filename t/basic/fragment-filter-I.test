@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: cflags
+FragmentFilter: I
+ExpectedStdout: -I/test/include/foo
+ExpectedExitCode: 0

@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: nonexistent
+WantedFlags: short-errors print-errors libs
+ExpectedStderr: Package 'nonexistent' not found
+MatchStderr: partial
+ExpectedExitCode: 1

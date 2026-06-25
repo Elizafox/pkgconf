@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: libs
+FragmentFilter: l
+ExpectedStdout: -lfoo
+ExpectedExitCode: 0

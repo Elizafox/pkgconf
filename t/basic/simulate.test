@@ -1,0 +1,8 @@
+SkipPlatforms: lite
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: simulate
+ExpectedStdout: node 'foo' {
+ExpectedStdout: version = '1.2.3';
+MatchStdout: partial
+ExpectedExitCode: 0

@@ -1,0 +1,4 @@
+-fPIC
+-I/test/include/foo
+-L/test/lib
+-lfoo

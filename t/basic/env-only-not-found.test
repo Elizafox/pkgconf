@@ -1,0 +1,4 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: env-only print-errors libs
+ExpectedExitCode: 1

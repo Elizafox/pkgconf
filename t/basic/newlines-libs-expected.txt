@@ -1,0 +1,2 @@
+-L/test/lib
+-lfoo

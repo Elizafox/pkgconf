@@ -1,0 +1,8 @@
+SkipPlatforms: lite
+PackageSearchPath: lib1
+Query: bar
+WantedFlags: solution
+ExpectedStdout: bar (
+ExpectedStdout: foo (
+MatchStdout: partial
+ExpectedExitCode: 0

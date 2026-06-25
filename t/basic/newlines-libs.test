@@ -1,0 +1,5 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: newlines libs
+ExpectedStdoutFile: newlines-libs-expected.txt
+ExpectedExitCode: 0

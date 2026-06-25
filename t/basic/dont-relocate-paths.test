@@ -1,0 +1,5 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: dont-relocate-paths libs
+ExpectedStdout: -L/test/lib -lfoo
+ExpectedExitCode: 0

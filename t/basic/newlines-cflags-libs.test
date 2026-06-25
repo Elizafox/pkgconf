@@ -1,0 +1,5 @@
+PackageSearchPath: lib1
+Query: foo
+WantedFlags: newlines cflags libs
+ExpectedStdoutFile: newlines-cflags-libs-expected.txt
+ExpectedExitCode: 0

@@ -1,0 +1,5 @@
+PackageSearchPath: lib1
+Query: foobar
+WantedFlags: internal-cflags cflags static
+ExpectedStdout: -fPIC -I/test/include/foobar -DFOOBAR_STATIC
+ExpectedExitCode: 0
