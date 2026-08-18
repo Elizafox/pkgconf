@@ -1,0 +1,13 @@
+Name: LLVM C++ Standard Library Modules
+Description: Source interfaces for the libc++ std and std.compat named modules
+URL: https://libcxx.llvm.org/Modules.html
+Version: @VERSION@
+Link.ABI: c++
+
+moduledir=@MODULEDIR@
+
+CxxModules: std std.compat
+CxxModule.std.Source: ${moduledir}/std.cppm
+CxxModule.std.Cflags: -std=c++23 -stdlib=libc++
+CxxModule.std.compat.Source: ${moduledir}/std.compat.cppm
+CxxModule.std.compat.Cflags: -std=c++23 -stdlib=libc++

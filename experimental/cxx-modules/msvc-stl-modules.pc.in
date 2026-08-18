@@ -1,0 +1,13 @@
+Name: Microsoft C++ Standard Library Modules
+Description: Source interfaces for the MSVC STL std and std.compat named modules
+URL: https://learn.microsoft.com/cpp/cpp/tutorial-import-stl-named-module
+Version: @VERSION@
+Link.ABI: c++
+
+moduledir=@MODULEDIR@
+
+CxxModules: std std.compat
+CxxModule.std.Source: ${moduledir}/std.ixx
+CxxModule.std.Cflags: /std:c++latest /EHsc
+CxxModule.std.compat.Source: ${moduledir}/std.compat.ixx
+CxxModule.std.compat.Cflags: /std:c++latest /EHsc

@@ -1,0 +1,13 @@
+Name: GNU C++ Standard Library Modules
+Description: Source interfaces for the libstdc++ std and std.compat named modules
+URL: https://gcc.gnu.org/onlinedocs/libstdc++/
+Version: @VERSION@
+Link.ABI: c++
+
+moduledir=@MODULEDIR@
+
+CxxModules: std std.compat
+CxxModule.std.Source: ${moduledir}/std.cc
+CxxModule.std.Cflags: -std=c++23 -fmodules
+CxxModule.std.compat.Source: ${moduledir}/std.compat.cc
+CxxModule.std.compat.Cflags: -std=c++23 -fmodules
