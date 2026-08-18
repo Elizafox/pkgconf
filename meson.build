@@ -233,6 +233,31 @@ pkg.generate(libpkgconf,
   extra_cflags : build_static
 )
 
+cxx_stdlib_modules = get_option('cxx-stdlib-modules')
+if cxx_stdlib_modules != 'disabled'
+  cxx_stdlib_module_dir = get_option('cxx-stdlib-module-dir')
+  cxx_stdlib_version = get_option('cxx-stdlib-version')
+
+  if cxx_stdlib_module_dir == ''
+    error('-Dcxx-stdlib-module-dir is required when C++ standard-library module metadata is enabled')
+  endif
+  if cxx_stdlib_version == ''
+    error('-Dcxx-stdlib-version is required when C++ standard-library module metadata is enabled')
+  endif
+
+  cxx_stdlib_module_data = configuration_data()
+  cxx_stdlib_module_data.set('MODULEDIR', cxx_stdlib_module_dir)
+  cxx_stdlib_module_data.set('VERSION', cxx_stdlib_version)
+
+  configure_file(
+    input : 'experimental/cxx-modules' / (cxx_stdlib_modules + '-modules.pc.in'),
+    output : cxx_stdlib_modules + '-modules.pc',
+    configuration : cxx_stdlib_module_data,
+    install : true,
+    install_dir : get_option('libdir') / 'pkgconfig',
+  )
+endif
+
 cli_include = include_directories('cli')
 
 windows_manifest = []

@@ -31,3 +31,25 @@ option('analyzer',
   value : false,
   description : 'enable GCC static analysis (-fanalyzer) on project targets'
 )
+
+option(
+  'cxx-stdlib-modules',
+  type : 'combo',
+  choices : ['disabled', 'libstdc++', 'libc++', 'msvc-stl'],
+  value : 'disabled',
+  description : 'Configure and install experimental std/std.compat pkg-config metadata'
+)
+
+option(
+  'cxx-stdlib-module-dir',
+  type : 'string',
+  value : '',
+  description : 'Installed directory containing the selected C++ standard library module sources'
+)
+
+option(
+  'cxx-stdlib-version',
+  type : 'string',
+  value : '',
+  description : 'Version of the selected C++ standard library or toolset'
+)

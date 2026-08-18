@@ -33,3 +33,21 @@ pkgconf --cxx-module-cflags=std.compat libc++-modules
 
 These templates track an experimental metadata format and may change without
 the compatibility guarantees of the established pkg-config fields.
+
+## Configuring with Meson
+
+The pkgconf build can configure and install one selected template. This is
+disabled by default. For example:
+
+```sh
+meson setup build \
+  -Dcxx-stdlib-modules=libc++ \
+  -Dcxx-stdlib-module-dir=/usr/lib/llvm-20/share/libc++/v1 \
+  -Dcxx-stdlib-version=20.1.0
+meson install -C build
+```
+
+Valid selections are `libstdc++`, `libc++`, and `msvc-stl`. Both the module
+directory and version options are mandatory when a selection is enabled. The
+configured file is installed under `${libdir}/pkgconfig` and is therefore
+available through pkgconf's normal package search path.
