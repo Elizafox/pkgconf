@@ -77,6 +77,7 @@ typedef struct test_case_
 
 	pkgconf_buffer_t want_env_prefix;
 	pkgconf_buffer_t want_variable;
+	pkgconf_buffer_t want_cxx_module;
 	pkgconf_buffer_t fragment_filter;
 
 	pkgconf_buffer_t skip_platforms;
@@ -351,6 +352,9 @@ static const pkgconf_test_flag_pair_t test_flag_pairs[] =
 	{"cflags",			PKG_CFLAGS},
 	{"cflags-only-i",		PKG_CFLAGS_ONLY_I},
 	{"cflags-only-other",		PKG_CFLAGS_ONLY_OTHER},
+	{"cxx-module-cflags",		PKG_CXX_MODULE_CFLAGS},
+	{"cxx-module-source",		PKG_CXX_MODULE_SOURCE},
+	{"cxx-modules",			PKG_CXX_MODULES},
 	{"debug",			PKG_DEBUG},
 	{"define-prefix",		PKG_DEFINE_PREFIX},
 	{"digraph",			PKG_DIGRAPH},
@@ -515,6 +519,7 @@ test_keyword_disabled(pkgconf_test_case_t *testcase, const char *keyword, const 
 static const pkgconf_test_keyword_pair_t test_keyword_pairs[] =
 {
 	{"AtLeastVersion",	test_keyword_set_buffer,		offsetof(pkgconf_test_case_t, atleast_version)},
+	{"CxxModule",		test_keyword_set_buffer,		offsetof(pkgconf_test_case_t, want_cxx_module)},
 	{"DefineVariable",	test_keyword_extend_bufferset,		offsetof(pkgconf_test_case_t, define_variables)},
 	{"Environment",		test_keyword_set_environment,		offsetof(pkgconf_test_case_t, env_vars)},
 	{"ExactVersion",	test_keyword_set_buffer,		offsetof(pkgconf_test_case_t, exact_version)},
@@ -1250,6 +1255,7 @@ run_test_case(const pkgconf_test_case_t *testcase)
 			.cli_state.want_flags = testcase->wanted_flags,
 			.cli_state.want_env_prefix = pkgconf_buffer_str(&testcase->want_env_prefix),
 			.cli_state.want_variable = pkgconf_buffer_str(&testcase->want_variable),
+			.cli_state.want_cxx_module = pkgconf_buffer_str(&testcase->want_cxx_module),
 			.cli_state.want_fragment_filter = pkgconf_buffer_str(&testcase->fragment_filter),
 			.cli_state.required_module_version = pkgconf_buffer_str(&testcase->atleast_version),
 			.cli_state.required_exact_module_version = pkgconf_buffer_str(&testcase->exact_version),
@@ -1409,6 +1415,7 @@ free_test_case(pkgconf_test_case_t *testcase)
 	pkgconf_buffer_finalize(&testcase->query);
 	pkgconf_buffer_finalize(&testcase->want_env_prefix);
 	pkgconf_buffer_finalize(&testcase->want_variable);
+	pkgconf_buffer_finalize(&testcase->want_cxx_module);
 	pkgconf_buffer_finalize(&testcase->fragment_filter);
 	pkgconf_buffer_finalize(&testcase->skip_platforms);
 	pkgconf_buffer_finalize(&testcase->atleast_version);

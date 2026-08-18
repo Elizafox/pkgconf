@@ -71,6 +71,9 @@
 #define PKG_NEWLINES			(((uint64_t) 1) << 51)
 #define PKG_PRINT_DIGRAPH_QUERY_NODES	(((uint64_t) 1) << 52)
 #define PKG_LINK_ABI			(((uint64_t) 1) << 53)
+#define PKG_CXX_MODULES			(((uint64_t) 1) << 54)
+#define PKG_CXX_MODULE_SOURCE		(((uint64_t) 1) << 55)
+#define PKG_CXX_MODULE_CFLAGS		(((uint64_t) 1) << 56)
 
 typedef struct {
 	pkgconf_client_t pkg_client;
@@ -84,6 +87,7 @@ typedef struct {
 	const char *want_variable;
 	const char *want_fragment_filter;
 	const char *want_env_prefix;
+	const char *want_cxx_module;
 
 	char *required_pkgconfig_version;
 	const char *required_exact_module_version;

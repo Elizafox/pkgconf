@@ -1,0 +1,13 @@
+prefix=/opt/example
+moduledir=${prefix}/lib/c++/modules
+
+Name: C++ modules test
+Description: Fixture for experimental C++ module metadata
+Version: 1.0
+Cflags: -I${prefix}/include
+CxxModules: example example.network noflags nosource
+CxxModule.example.Source: ${moduledir}/example.cppm
+CxxModule.example.Cflags: -std=c++23 -DEXAMPLE_MODULE=1
+CxxModule.example.network.Source: ${moduledir}/example.network.cppm
+CxxModule.example.network.Cflags: -std=c++23 -DNETWORK="enabled feature"
+CxxModule.noflags.Source: ${moduledir}/noflags.cppm

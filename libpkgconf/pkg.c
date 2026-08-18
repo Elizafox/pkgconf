@@ -268,6 +268,93 @@ pkgconf_pkg_parser_fragment_func(pkgconf_client_t *client, pkgconf_pkg_t *pkg, c
 	}
 }
 
+const pkgconf_cxx_module_t *
+pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name)
+{
+	pkgconf_node_t *node;
+
+	PKGCONF_FOREACH_LIST_ENTRY(pkg->cxx_modules.head, node)
+	{
+		pkgconf_cxx_module_t *module = node->data;
+		if (!strcmp(module->name, name))
+			return module;
+	}
+
+	return NULL;
+}
+
+static void
+pkgconf_pkg_parser_cxx_modules_func(pkgconf_client_t *client, pkgconf_pkg_t *pkg, const char *keyword, const pkgconf_parser_location_t *loc, const ptrdiff_t offset, const char *value)
+{
+	char *expanded = pkgconf_bytecode_eval_str(client, &pkg->vars, value, NULL);
+	char *p = expanded;
+	(void) keyword;
+	(void) loc;
+	(void) offset;
+
+	while (p != NULL && *p != '\0')
+	{
+		char *name;
+		pkgconf_cxx_module_t *module;
+
+		while (*p == ',' || isspace((unsigned char) *p))
+			p++;
+		if (*p == '\0')
+			break;
+
+		name = p;
+		while (*p != '\0' && *p != ',' && !isspace((unsigned char) *p))
+			p++;
+		if (*p != '\0')
+			*p++ = '\0';
+
+		if (pkgconf_pkg_cxx_module_lookup(pkg, name) != NULL)
+			continue;
+
+		module = calloc(1, sizeof(*module));
+		if (module == NULL || (module->name = strdup(name)) == NULL)
+		{
+			free(module);
+			break;
+		}
+		pkgconf_node_insert_tail(&module->iter, module, &pkg->cxx_modules);
+	}
+
+	free(expanded);
+}
+
+static void
+pkgconf_pkg_parser_cxx_module_property(pkgconf_pkg_t *pkg, const pkgconf_parser_location_t *loc, const char *keyword, const char *value)
+{
+	static const char prefix[] = "CxxModule.";
+	const char *suffix = strrchr(keyword + sizeof(prefix) - 1, '.');
+	pkgconf_cxx_module_t *module;
+	char *name;
+
+	if (suffix == NULL || suffix == keyword + sizeof(prefix) - 1)
+		return;
+
+	name = pkgconf_strndup(keyword + sizeof(prefix) - 1, suffix - (keyword + sizeof(prefix) - 1));
+	if (name == NULL)
+		return;
+	module = (pkgconf_cxx_module_t *) pkgconf_pkg_cxx_module_lookup(pkg, name);
+	free(name);
+	if (module == NULL)
+	{
+		pkgconf_warn(pkg->owner, "%s:" SIZE_FMT_SPECIFIER ": warning: module property '%s' names a module not declared by CxxModules\n", loc->filename, loc->lineno, keyword);
+		return;
+	}
+
+	if (!strcasecmp(suffix, ".Source"))
+	{
+		free(module->source);
+		module->source = pkgconf_bytecode_eval_str(pkg->owner, &pkg->vars, value, NULL);
+	}
+	else if (!strcasecmp(suffix, ".Cflags") &&
+		!pkgconf_fragment_parse(pkg->owner, &module->cflags, &pkg->vars, value, pkg->flags))
+		pkgconf_warn(pkg->owner, "%s:" SIZE_FMT_SPECIFIER ": warning: unable to parse field '%s' into an argument vector, value [%s]\n", loc->filename, loc->lineno, keyword, value);
+}
+
 static void
 pkgconf_pkg_parser_dependency_func(pkgconf_client_t *client, pkgconf_pkg_t *pkg, const char *keyword, const pkgconf_parser_location_t *loc, const ptrdiff_t offset, const char *value)
 {
@@ -345,6 +432,7 @@ static const pkgconf_pkg_parser_keyword_pair_t pkgconf_pkg_parser_keyword_funcs[
 	{"CFLAGS.shared", pkgconf_pkg_parser_fragment_func, offsetof(pkgconf_pkg_t, cflags_shared)},
 	{"Conflicts", pkgconf_pkg_parser_dependency_func, offsetof(pkgconf_pkg_t, conflicts)},
 	{"Copyright", pkgconf_pkg_parser_bufferset_func, offsetof(pkgconf_pkg_t, copyright)},
+	{"CxxModules", pkgconf_pkg_parser_cxx_modules_func, 0},
 	{"Description", pkgconf_pkg_parser_tuple_func, offsetof(pkgconf_pkg_t, description)},
 	{"LIBS", pkgconf_pkg_parser_fragment_func, offsetof(pkgconf_pkg_t, libs)},
 	{"LIBS.private", pkgconf_pkg_parser_fragment_func, offsetof(pkgconf_pkg_t, libs_private)},
@@ -374,7 +462,11 @@ pkgconf_pkg_parser_keyword_set(void *opaque, const pkgconf_parser_location_t *lo
 		sizeof(pkgconf_pkg_parser_keyword_pair_t), pkgconf_pkg_parser_keyword_pair_cmp);
 
 	if (pair == NULL || pair->func == NULL)
+	{
+		if (!strncasecmp(keyword, "CxxModule.", strlen("CxxModule.")))
+			pkgconf_pkg_parser_cxx_module_property(pkg, loc, keyword, value);
 		return;
+	}
 
 	pair->func(pkg->owner, pkg, keyword, loc, pair->offset, value);
 }
@@ -718,8 +810,18 @@ pkg_free_object(pkgconf_pkg_t *pkg)
 static void
 pkg_free_lists(pkgconf_pkg_t *pkg)
 {
+	pkgconf_node_t *node, *next;
+
 	pkgconf_bufferset_free(&pkg->copyright);
 	pkgconf_bufferset_free(&pkg->link_abi);
+	PKGCONF_FOREACH_LIST_ENTRY_SAFE(pkg->cxx_modules.head, next, node)
+	{
+		pkgconf_cxx_module_t *module = node->data;
+		free(module->name);
+		free(module->source);
+		pkgconf_fragment_free(&module->cflags);
+		free(module);
+	}
 
 	pkgconf_dependency_free(&pkg->required);
 	pkgconf_dependency_free(&pkg->requires_private);

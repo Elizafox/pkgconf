@@ -301,6 +301,22 @@ requested modules rather than combining them into a build, namely
 .Fl -source ,
 and
 .Fl -variable .
+.It Fl -cxx-modules
+List, one per line and in declaration order, the C++ named modules declared by
+exactly one package's
+.Sy CxxModules
+property.
+.It Fl -cxx-module-source Ns = Ns Ar name
+Print the expanded source interface path for the declared C++ module
+.Ar name
+from exactly one package.
+The query fails if the module or its source property is missing.
+.It Fl -cxx-module-cflags Ns = Ns Ar name
+Print the module-specific compiler fragments for the declared C++ module
+.Ar name
+from exactly one package.
+This does not include the package's ordinary
+.Sy Cflags .
 .It Fl -keep-system-cflags , Fl -keep-system-libs
 Keep CFLAGS or linker flag fragments that would be filtered due to being
 included by default in the compiler.

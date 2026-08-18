@@ -1,0 +1,5 @@
+PackageSearchPath: lib1
+Query: cxx-modules
+WantedFlags: cxx-modules
+ExpectedExitCode: 0
+ExpectedStdoutFile: list.out

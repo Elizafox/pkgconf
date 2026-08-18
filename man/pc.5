@@ -128,6 +128,22 @@ Required compiler flags for shared compilation only.
 .It Copyright
 A copyright attestation statement.
 (optional; literal; pkgconf extension; introduced in pkgconf 1.9.3)
+.It CxxModules
+A whitespace- or comma-separated, ordered list of C++ named modules exported
+by this package.
+(optional; pkgconf experimental extension)
+.It CxxModule. Ns Ar name Ns .Source
+The installed source module interface unit for the declared C++ module
+.Ar name .
+Binary module interfaces are deliberately not described by this property.
+(required for a queryable declared module; literal; pkgconf experimental extension)
+.It CxxModule. Ns Ar name Ns .Cflags
+Additional compiler flags needed when compiling the source interface unit for
+the declared C++ module
+.Ar name .
+These do not include or alter the package's ordinary
+.Sy Cflags .
+(optional; fragment list; pkgconf experimental extension)
 .It Libs
 Required linking flags for this package.
 Libraries this package depends on for linking against it, which are not

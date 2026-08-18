@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: cxx-modules
+WantedFlags: cxx-module-cflags
+CxxModule: example.network
+ExpectedExitCode: 0
+ExpectedStdout: -std=c++23 -DNETWORK=enabled\ feature

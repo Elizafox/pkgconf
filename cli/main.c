@@ -197,6 +197,9 @@ usage(void)
 	printf("  --define-variable=varname=value   define variable 'varname' as 'value'\n");
 	printf("  --variable=varname                print specified variable entry to stdout\n");
 	printf("  --cflags                          print required CFLAGS to stdout\n");
+	printf("  --cxx-modules                     list C++ modules declared by one package\n");
+	printf("  --cxx-module-source=name          print the source path for a declared C++ module\n");
+	printf("  --cxx-module-cflags=name          print flags for compiling a declared C++ module\n");
 	printf("  --cflags-only-I                   print required include-dir CFLAGS to stdout\n");
 	printf("  --cflags-only-other               print required non-include-dir CFLAGS to stdout\n");
 	printf("  --libs                            print required linker flags to stdout\n");
@@ -349,6 +352,9 @@ main(int argc, char *argv[])
 		{ "license", no_argument, &state.want_flags, PKG_DUMP_LICENSE },
 		{ "license-file", no_argument, &state.want_flags, PKG_DUMP_LICENSE_FILE },
 		{ "link-abi", no_argument, &state.want_flags, PKG_LINK_ABI },
+		{ "cxx-modules", no_argument, &state.want_flags, PKG_CXX_MODULES|PKG_PRINT_ERRORS },
+		{ "cxx-module-source", required_argument, NULL, 56 },
+		{ "cxx-module-cflags", required_argument, NULL, 57 },
 		{ "verbose", no_argument, NULL, 55 },
 		{ "exists-cflags", no_argument, &state.want_flags, PKG_EXISTS_CFLAGS },
 		{ "fragment-tree", no_argument, &state.want_flags, PKG_FRAGMENT_TREE },
@@ -420,6 +426,14 @@ main(int argc, char *argv[])
 #endif
 		case 55:
 			state.verbosity++;
+			break;
+		case 56:
+			state.want_flags |= PKG_CXX_MODULE_SOURCE | PKG_PRINT_ERRORS;
+			state.want_cxx_module = pkg_optarg;
+			break;
+		case 57:
+			state.want_flags |= PKG_CXX_MODULE_CFLAGS | PKG_PRINT_ERRORS;
+			state.want_cxx_module = pkg_optarg;
 			break;
 		case '?':
 		case ':':

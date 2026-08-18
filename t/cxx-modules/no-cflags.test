@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: cxx-modules
+WantedFlags: cxx-module-cflags
+CxxModule: noflags
+ExpectedExitCode: 0
+ExpectedStdout:

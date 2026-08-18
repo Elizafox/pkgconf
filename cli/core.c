@@ -96,6 +96,19 @@ filter_cflags(const pkgconf_client_t *client, const pkgconf_fragment_t *frag, vo
 }
 
 static bool
+filter_cxx_module_cflags(const pkgconf_client_t *client, const pkgconf_fragment_t *frag, void *data)
+{
+	pkgconf_cli_state_t *state = client->client_data;
+	(void) data;
+
+	if (!(state->want_flags & PKG_KEEP_SYSTEM_CFLAGS) && pkgconf_fragment_has_system_dir(client, frag))
+		return false;
+	if (state->want_fragment_filter != NULL && (strchr(state->want_fragment_filter, frag->type) == NULL || !frag->type))
+		return false;
+	return true;
+}
+
+static bool
 filter_libs(const pkgconf_client_t *client, const pkgconf_fragment_t *frag, void *data)
 {
 	int got_flags = 0;
@@ -911,6 +924,74 @@ apply_source(pkgconf_client_t *client, pkgconf_pkg_t *world, void *data, int max
 	return true;
 }
 
+static pkgconf_pkg_t *
+cxx_module_query_package(pkgconf_pkg_t *world)
+{
+	pkgconf_dependency_t *dep;
+
+	if (world->required.head == NULL)
+		return NULL;
+	dep = world->required.head->data;
+	return dep->match;
+}
+
+static bool
+apply_cxx_modules(pkgconf_client_t *client, pkgconf_pkg_t *world)
+{
+	pkgconf_pkg_t *pkg = cxx_module_query_package(world);
+	pkgconf_node_t *node;
+
+	if (pkg == NULL)
+		return false;
+	PKGCONF_FOREACH_LIST_ENTRY(pkg->cxx_modules.head, node)
+	{
+		pkgconf_cxx_module_t *module = node->data;
+		pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, module->name);
+	}
+	return true;
+}
+
+static bool
+apply_cxx_module_source(pkgconf_client_t *client, pkgconf_pkg_t *world, const char *name)
+{
+	pkgconf_pkg_t *pkg = cxx_module_query_package(world);
+	const pkgconf_cxx_module_t *module = pkg != NULL ? pkgconf_pkg_cxx_module_lookup(pkg, name) : NULL;
+
+	if (module == NULL || module->source == NULL)
+	{
+		pkgconf_error(client, "C++ module '%s' is not declared with a source by package '%s'\n", name, pkg != NULL ? pkg->id : "");
+		return false;
+	}
+	return pkgconf_output_puts(client->output, PKGCONF_OUTPUT_STDOUT, module->source);
+}
+
+static bool
+apply_cxx_module_cflags(pkgconf_client_t *client, pkgconf_pkg_t *world, const char *name, pkgconf_cli_state_t *state)
+{
+	pkgconf_pkg_t *pkg = cxx_module_query_package(world);
+	const pkgconf_cxx_module_t *module = pkg != NULL ? pkgconf_pkg_cxx_module_lookup(pkg, name) : NULL;
+	pkgconf_buffer_t render_buf = PKGCONF_BUFFER_INITIALIZER;
+	pkgconf_list_t filtered = PKGCONF_LIST_INITIALIZER;
+
+	if (module == NULL)
+	{
+		pkgconf_error(client, "C++ module '%s' is not declared by package '%s'\n", name, pkg != NULL ? pkg->id : "");
+		return false;
+	}
+	pkgconf_fragment_filter(client, &filtered, (pkgconf_list_t *) &module->cflags, filter_cxx_module_cflags, NULL);
+	if (!pkgconf_fragment_render_buf(&filtered, &render_buf, true, state->want_render_ops,
+		(state->want_flags & PKG_NEWLINES) ? '\n' : ' ') ||
+		!pkgconf_output_putbuf(client->output, PKGCONF_OUTPUT_STDOUT, &render_buf, true))
+	{
+		pkgconf_buffer_finalize(&render_buf);
+		pkgconf_fragment_free(&filtered);
+		return false;
+	}
+	pkgconf_buffer_finalize(&render_buf);
+	pkgconf_fragment_free(&filtered);
+	return true;
+}
+
 bool
 path_list_to_buffer(const pkgconf_list_t *list, pkgconf_buffer_t *buffer, char delim)
 {
@@ -1050,8 +1131,6 @@ out:
 int
 pkgconf_cli_run(pkgconf_cli_state_t *state, int argc, char *argv[], int last_argc)
 {
-	(void) argc;
-
 	int ret = EXIT_SUCCESS;
 	unsigned int want_client_flags = PKGCONF_PKG_PKGF_NONE;
 	const char *builddir;
@@ -1065,6 +1144,15 @@ pkgconf_cli_run(pkgconf_cli_state_t *state, int argc, char *argv[], int last_arg
 		.realname = "virtual world package",
 		.flags = PKGCONF_PKG_PROPF_STATIC | PKGCONF_PKG_PROPF_VIRTUAL,
 	};
+
+	if ((state->want_flags & (PKG_CXX_MODULES | PKG_CXX_MODULE_SOURCE | PKG_CXX_MODULE_CFLAGS)) != 0 &&
+		argc - last_argc != 1)
+	{
+		pkgconf_output_puts(state->pkg_client.output, PKGCONF_OUTPUT_STDERR,
+			"C++ module queries require exactly one package name.");
+		ret = EXIT_FAILURE;
+		goto out;
+	}
 
 #ifndef PKGCONF_LITE
 	if ((state->want_flags & PKG_DUMP_PERSONALITY) == PKG_DUMP_PERSONALITY)
@@ -1156,7 +1244,8 @@ pkgconf_cli_run(pkgconf_cli_state_t *state, int argc, char *argv[], int last_arg
 		(state->want_flags & PKG_PROVIDES) == PKG_PROVIDES ||
 		(state->want_flags & PKG_VARIABLES) == PKG_VARIABLES ||
 		(state->want_flags & PKG_PATH) == PKG_PATH ||
-		state->want_variable != NULL;
+		state->want_variable != NULL ||
+		(state->want_flags & (PKG_CXX_MODULES | PKG_CXX_MODULE_SOURCE | PKG_CXX_MODULE_CFLAGS)) != 0;
 
 	if (querying_flattened_metadata)
 		state->maximum_traverse_depth = 1;
@@ -1176,7 +1265,8 @@ pkgconf_cli_run(pkgconf_cli_state_t *state, int argc, char *argv[], int last_arg
 	 */
 	if ((state->want_flags & PKG_VARIABLES) == PKG_VARIABLES ||
 		(state->want_flags & PKG_PATH) == PKG_PATH ||
-		state->want_variable != NULL)
+		state->want_variable != NULL ||
+		(state->want_flags & (PKG_CXX_MODULES | PKG_CXX_MODULE_SOURCE | PKG_CXX_MODULE_CFLAGS)) != 0)
 	{
 		state->maximum_package_count = 1;
 	}
@@ -1372,6 +1462,27 @@ pkgconf_cli_run(pkgconf_cli_state_t *state, int argc, char *argv[], int last_arg
 	if ((state->want_flags & PKG_DUMP_SOURCE) == PKG_DUMP_SOURCE)
 	{
 		apply_source(&state->pkg_client, &world, &ret, 2);
+		goto out;
+	}
+
+	if ((state->want_flags & PKG_CXX_MODULES) == PKG_CXX_MODULES)
+	{
+		if (!apply_cxx_modules(&state->pkg_client, &world))
+			ret = EXIT_FAILURE;
+		goto out;
+	}
+
+	if ((state->want_flags & PKG_CXX_MODULE_SOURCE) == PKG_CXX_MODULE_SOURCE)
+	{
+		if (!apply_cxx_module_source(&state->pkg_client, &world, state->want_cxx_module))
+			ret = EXIT_FAILURE;
+		goto out;
+	}
+
+	if ((state->want_flags & PKG_CXX_MODULE_CFLAGS) == PKG_CXX_MODULE_CFLAGS)
+	{
+		if (!apply_cxx_module_cflags(&state->pkg_client, &world, state->want_cxx_module, state))
+			ret = EXIT_FAILURE;
 		goto out;
 	}
 

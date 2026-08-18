@@ -59,6 +59,7 @@ typedef struct pkgconf_cross_personality_ pkgconf_cross_personality_t;
 typedef struct pkgconf_queue_ pkgconf_queue_t;
 typedef struct pkgconf_output_ pkgconf_output_t;
 typedef struct pkgconf_license_ pkgconf_license_t;
+typedef struct pkgconf_cxx_module_ pkgconf_cxx_module_t;
 
 #define PKGCONF_ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
 
@@ -198,6 +199,13 @@ struct pkgconf_license_ {
 	char *data;
 };
 
+struct pkgconf_cxx_module_ {
+	pkgconf_node_t iter;
+	char *name;
+	char *source;
+	pkgconf_list_t cflags;
+};
+
 #define PKGCONF_PKG_PROPF_NONE			0x00
 #define PKGCONF_PKG_PROPF_STATIC		0x01
 #define PKGCONF_PKG_PROPF_CACHED		0x02
@@ -226,6 +234,7 @@ struct pkgconf_pkg_ {
 	pkgconf_list_t license;
 
 	pkgconf_list_t link_abi;
+	pkgconf_list_t cxx_modules;
 
 	pkgconf_list_t libs;
 	pkgconf_list_t libs_private;
@@ -502,6 +511,7 @@ PKGCONF_API const char *pkgconf_pkg_get_comparator(const pkgconf_dependency_t *p
 PKGCONF_API unsigned int pkgconf_pkg_cflags(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
 PKGCONF_API unsigned int pkgconf_pkg_libs(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
 PKGCONF_API unsigned int pkgconf_pkg_link_abi(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
+PKGCONF_API const pkgconf_cxx_module_t *pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name);
 PKGCONF_API pkgconf_pkg_comparator_t pkgconf_pkg_comparator_lookup_by_name(const char *name);
 
 PKGCONF_API int pkgconf_compare_version(const char *a, const char *b);

@@ -427,6 +427,7 @@ tool_dir = meson.current_build_dir()
 
 test_suites = [
   'basic',
+  'cxx-modules',
   'cli',
   'link-abi',
   'ordering',

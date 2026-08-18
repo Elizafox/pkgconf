@@ -1,0 +1,6 @@
+PackageSearchPath: lib1
+Query: cxx-modules
+WantedFlags: cxx-module-source
+CxxModule: example.network
+ExpectedExitCode: 0
+ExpectedStdout: /opt/example/lib/c++/modules/example.network.cppm
