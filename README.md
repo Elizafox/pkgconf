@@ -103,6 +103,53 @@ To do this, use the `SYSTEM_LIBDIR` and `SYSTEM_INCLUDEDIR` Meson options like s
 There are a few additional defines such as `PKGCONFIGDIR`.  On Windows, the default
 `PKGCONFIGDIR` value is usually overridden at runtime based on path relocation.
 
+### experimental C++ standard-library module metadata
+
+This branch can build and install an experimental `.pc` file that advertises
+the `std` and `std.compat` named module source interfaces for one C++ standard
+library. The feature is disabled by default. Select the implementation and
+provide the module source directory and the matching library or toolset
+version:
+
+```sh
+$ meson setup build \
+    -Dcxx-stdlib-modules=libc++ \
+    -Dcxx-stdlib-module-dir=/path/to/libc++/modules \
+    -Dcxx-stdlib-version=20.1.0
+$ meson compile -C build
+$ meson install -C build
+```
+
+The supported values of `cxx-stdlib-modules` and their expected source files
+are:
+
+| Value | Generated package | Files under `cxx-stdlib-module-dir` |
+| --- | --- | --- |
+| `libstdc++` | `libstdc++-modules.pc` | `std.cc`, `std.compat.cc` |
+| `libc++` | `libc++-modules.pc` | `std.cppm`, `std.compat.cppm` |
+| `msvc-stl` | `msvc-stl-modules.pc` | `std.ixx`, `std.compat.ixx` |
+
+The selected file is installed in `${libdir}/pkgconfig`. The module directory
+must refer to the interfaces installed by the same toolchain version named by
+`cxx-stdlib-version`; pkgconf does not install those source interfaces itself.
+Use separate build directories if packaging metadata for more than one
+implementation.
+
+After installation, verify discovery with the generated package name:
+
+```sh
+$ pkgconf --cxx-modules libc++-modules
+std
+std.compat
+$ pkgconf --cxx-module-source=std libc++-modules
+/path/to/libc++/modules/std.cppm
+$ pkgconf --cxx-module-cflags=std.compat libc++-modules
+-std=c++23 -stdlib=libc++
+```
+
+See [the template documentation](experimental/cxx-modules/README.md) for the
+format's scope and the responsibilities left to consuming build systems.
+
 ### bootstrapping with Muon
 
 In bootstrap environments where Python is not yet available, pkgconf can also be
