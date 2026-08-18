@@ -268,10 +268,44 @@ pkgconf_pkg_parser_fragment_func(pkgconf_client_t *client, pkgconf_pkg_t *pkg, c
 	}
 }
 
+/*
+ * !doc
+ *
+ * .. c:function:: const pkgconf_list_t *pkgconf_pkg_cxx_modules(const pkgconf_pkg_t *pkg)
+ *
+ *    Returns the ordered list of C++ named modules declared by a package.
+ *    The list and its entries are owned by the package.
+ *
+ *    :param pkgconf_pkg_t* pkg: The package object to inspect.
+ *    :return: The package's C++ module list, or ``NULL`` if `pkg` is ``NULL``.
+ *    :rtype: const pkgconf_list_t *
+ */
+const pkgconf_list_t *
+pkgconf_pkg_cxx_modules(const pkgconf_pkg_t *pkg)
+{
+	return pkg != NULL ? &pkg->cxx_modules : NULL;
+}
+
+/*
+ * !doc
+ *
+ * .. c:function:: const pkgconf_cxx_module_t *pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name)
+ *
+ *    Looks up a C++ named module declared by a package.  The returned object is
+ *    owned by the package.
+ *
+ *    :param pkgconf_pkg_t* pkg: The package object to inspect.
+ *    :param char* name: The exact, case-sensitive module name to find.
+ *    :return: The matching module, or ``NULL`` if no module matches or either argument is ``NULL``.
+ *    :rtype: const pkgconf_cxx_module_t *
+ */
 const pkgconf_cxx_module_t *
 pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name)
 {
 	pkgconf_node_t *node;
+
+	if (pkg == NULL || name == NULL)
+		return NULL;
 
 	PKGCONF_FOREACH_LIST_ENTRY(pkg->cxx_modules.head, node)
 	{
@@ -281,6 +315,62 @@ pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name)
 	}
 
 	return NULL;
+}
+
+/*
+ * !doc
+ *
+ * .. c:function:: const char *pkgconf_cxx_module_name(const pkgconf_cxx_module_t *module)
+ *
+ *    Returns the declared name of a C++ module.  The string is owned by the
+ *    module and remains valid for the lifetime of its package.
+ *
+ *    :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+ *    :return: The module name, or ``NULL`` if `module` is ``NULL``.
+ *    :rtype: const char *
+ */
+const char *
+pkgconf_cxx_module_name(const pkgconf_cxx_module_t *module)
+{
+	return module != NULL ? module->name : NULL;
+}
+
+/*
+ * !doc
+ *
+ * .. c:function:: const char *pkgconf_cxx_module_source(const pkgconf_cxx_module_t *module)
+ *
+ *    Returns the expanded source interface path declared for a C++ module.
+ *    The string is owned by the module and remains valid for the lifetime of
+ *    its package.
+ *
+ *    :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+ *    :return: The source path, or ``NULL`` if none was declared or `module` is ``NULL``.
+ *    :rtype: const char *
+ */
+const char *
+pkgconf_cxx_module_source(const pkgconf_cxx_module_t *module)
+{
+	return module != NULL ? module->source : NULL;
+}
+
+/*
+ * !doc
+ *
+ * .. c:function:: const pkgconf_list_t *pkgconf_cxx_module_cflags(const pkgconf_cxx_module_t *module)
+ *
+ *    Returns the ordered compiler fragment list declared for a C++ module.
+ *    The list and its fragments are owned by the module.  An empty list means
+ *    that no module-specific compiler flags were declared.
+ *
+ *    :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+ *    :return: The compiler fragment list, or ``NULL`` if `module` is ``NULL``.
+ *    :rtype: const pkgconf_list_t *
+ */
+const pkgconf_list_t *
+pkgconf_cxx_module_cflags(const pkgconf_cxx_module_t *module)
+{
+	return module != NULL ? &module->cflags : NULL;
 }
 
 static void

@@ -511,7 +511,11 @@ PKGCONF_API const char *pkgconf_pkg_get_comparator(const pkgconf_dependency_t *p
 PKGCONF_API unsigned int pkgconf_pkg_cflags(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
 PKGCONF_API unsigned int pkgconf_pkg_libs(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
 PKGCONF_API unsigned int pkgconf_pkg_link_abi(pkgconf_client_t *client, pkgconf_pkg_t *root, pkgconf_list_t *list, int maxdepth);
+PKGCONF_API const pkgconf_list_t *pkgconf_pkg_cxx_modules(const pkgconf_pkg_t *pkg);
 PKGCONF_API const pkgconf_cxx_module_t *pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name);
+PKGCONF_API const char *pkgconf_cxx_module_name(const pkgconf_cxx_module_t *module);
+PKGCONF_API const char *pkgconf_cxx_module_source(const pkgconf_cxx_module_t *module);
+PKGCONF_API const pkgconf_list_t *pkgconf_cxx_module_cflags(const pkgconf_cxx_module_t *module);
 PKGCONF_API pkgconf_pkg_comparator_t pkgconf_pkg_comparator_lookup_by_name(const char *name);
 
 PKGCONF_API int pkgconf_compare_version(const char *a, const char *b);

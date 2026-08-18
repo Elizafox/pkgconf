@@ -152,3 +152,58 @@ routines.
    :param int maxdepth: The maximum allowed depth for dependency resolution.  -1 means infinite recursion.
    :return: ``PKGCONF_PKG_ERRF_OK`` if successful, otherwise an error code.
    :rtype: unsigned int
+
+C++ named modules
+-----------------
+
+The C++ module objects and all values returned by these functions are borrowed
+from the package.  They remain valid until the owning ``pkgconf_pkg_t`` is
+released and must not be modified or freed by the caller.  Module and compiler
+fragment lists preserve declaration order.
+
+.. c:function:: const pkgconf_list_t *pkgconf_pkg_cxx_modules(const pkgconf_pkg_t *pkg)
+
+   Return the package's ordered list of declared C++ named modules, or ``NULL``
+   when `pkg` is ``NULL``.  Each list node contains a
+   ``pkgconf_cxx_module_t``.
+
+   :param pkgconf_pkg_t* pkg: The package object to inspect.
+   :return: The package's C++ module list, or ``NULL`` if `pkg` is ``NULL``.
+   :rtype: const pkgconf_list_t *
+
+.. c:function:: const pkgconf_cxx_module_t *pkgconf_pkg_cxx_module_lookup(const pkgconf_pkg_t *pkg, const char *name)
+
+   Look up a declared C++ named module by its exact, case-sensitive name.
+   Returns ``NULL`` if either argument is ``NULL`` or no module matches.
+
+   :param pkgconf_pkg_t* pkg: The package object to inspect.
+   :param char* name: The exact, case-sensitive module name to find.
+   :return: The matching module, or ``NULL`` if no module matches or either argument is ``NULL``.
+   :rtype: const pkgconf_cxx_module_t *
+
+.. c:function:: const char *pkgconf_cxx_module_name(const pkgconf_cxx_module_t *module)
+
+   Return the module name, or ``NULL`` when `module` is ``NULL``.
+
+   :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+   :return: The module name, or ``NULL`` if `module` is ``NULL``.
+   :rtype: const char *
+
+.. c:function:: const char *pkgconf_cxx_module_source(const pkgconf_cxx_module_t *module)
+
+   Return the expanded source interface path.  Returns ``NULL`` when no
+   ``Source`` property was declared or `module` is ``NULL``.
+
+   :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+   :return: The source path, or ``NULL`` if none was declared or `module` is ``NULL``.
+   :rtype: const char *
+
+.. c:function:: const pkgconf_list_t *pkgconf_cxx_module_cflags(const pkgconf_cxx_module_t *module)
+
+   Return the module-specific compiler fragment list, or ``NULL`` when
+   `module` is ``NULL``.  An empty list means no ``Cflags`` property was
+   declared.  Consumers can process it with the public fragment API.
+
+   :param pkgconf_cxx_module_t* module: The C++ module object to inspect.
+   :return: The compiler fragment list, or ``NULL`` if `module` is ``NULL``.
+   :rtype: const pkgconf_list_t *

@@ -337,6 +337,7 @@ api_tests = [
   'buffer',
   'bytecode',
   'client',
+  'cxx-module',
   'dependency',
   'fileio',
   'fragment',
@@ -354,7 +355,7 @@ foreach t : api_tests
     'tests/api/test-' + t + '.c',
     windows_manifest,
     link_with : libpkgconf,
-    c_args : build_static,
+    c_args : [build_static, '-DPKGCONF_TEST_SRCDIR="@0@"'.format(meson.current_source_dir())],
     include_directories : [include_directories('.'), include_directories('tests/api')],
     install : false,
     build_by_default : false)
